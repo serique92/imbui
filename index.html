@@ -69,6 +69,9 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 input.gold{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;width:112px}
 input.gold.empty{border-color:var(--warn);box-shadow:0 0 0 1px color-mix(in srgb,var(--warn) 35%,transparent)}
 input::placeholder{color:var(--fg-faint)}
+option,optgroup{background:var(--surface-2);color:var(--fg)}
+optgroup{color:var(--fg-muted);font-style:normal;font-weight:600}
+select{color-scheme:inherit}
 section{margin-top:40px}
 .sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px;margin-bottom:16px}
 .sec-head p{max-width:62ch;color:var(--fg-muted)}
@@ -453,7 +456,7 @@ const CATS = { leech: 'Leech e crítico', skill: 'Skills', elemental: 'Dano elem
 const IMBS = [
   { id:'vampirism', name:'Vampirism', cat:'leech', effect:'Life Leech', vals:['5%','10%','25%'], unit:'de leech de vida', applies:'Armas (corpo a corpo, bows, crossbows, wands e rods) e armaduras', items:[['Vampire Teeth',25],['Bloody Pincers',15],['Piece of Dead Brain',5]] },
   { id:'void', name:'Void', cat:'leech', effect:'Mana Leech', vals:['3%','5%','8%'], unit:'de leech de mana', applies:'Armas (corpo a corpo, bows, crossbows, wands e rods) e capacetes', items:[['Rope Belt',25],['Silencer Claws',25],['Some Grimeleech Wings',5]] },
-  { id:'strike', name:'Strike', cat:'leech', effect:'Critical Hit', vals:['+5%','+15%','+40%'], unit:'de dano crítico (5% de chance)', applies:'Armas corpo a corpo, bows, crossbows e alguns wands e rods', items:[['Protective Charm',20],['Sabretooth',25],['Vexclaw Talon',5]] },
+  { id:'strike', name:'Strike', cat:'leech', effect:'Critical Hit', vals:['+5%','+15%','+40%'], unit:'de dano crítico (5% de chance)', applies:'Armas corpo a corpo, bows, crossbows, wands e rods (exceto Cobra Wand, Lion Rod, Deepling Fork e as Inferniarch "Rending")', items:[['Protective Charm',20],['Sabretooth',25],['Vexclaw Talon',5]] },
   { id:'epiphany', name:'Epiphany', cat:'skill', effect:'Magic Level', vals:['+1','+2','+4'], unit:'Magic Level', applies:'Wands, rods e capacetes exclusivos de mago (mais Falcon Coif e alguns outros)', items:[['Elvish Talisman',25],['Broken Shamanic Staff',15],['Strand of Medusa Hair',15]] },
   { id:'precision', name:'Precision', cat:'skill', effect:'Distance Fighting', vals:['+1','+2','+4'], unit:'Distance', applies:'Capacetes, bows e crossbows', items:[['Elven Scouting Glass',25],['Elven Hoof',20],['Metal Spike',10]] },
   { id:'slash', name:'Slash', cat:'skill', effect:'Sword Fighting', vals:['+1','+2','+4'], unit:'Sword', applies:'Capacetes e espadas', items:[["Lion's Mane",25],["Mooh'tah Shell",25],['War Crystal',5]] },
@@ -461,7 +464,7 @@ const IMBS = [
   { id:'bash', name:'Bash', cat:'skill', effect:'Club Fighting', vals:['+1','+2','+4'], unit:'Club', applies:'Capacetes e clavas', items:[['Cyclops Toe',20],['Ogre Nose Ring',15],["Warmaster's Wristguards",10]] },
   { id:'punch', name:'Punch', cat:'skill', effect:'Fist Fighting', vals:['+1','+2','+4'], unit:'Fist', applies:'Capacetes e armas de punho', items:[['Tarantula Egg',25],['Mantassin Tail',20],['Gold-Brocaded Cloth',15]] },
   { id:'blockade', name:'Blockade', cat:'skill', effect:'Shielding', vals:['+1','+2','+4'], unit:'Shielding', applies:'Capacetes, escudos e spellbooks', items:[['Piece of Scarab Shell',20],['Brimstone Shell',25],['Frazzle Skin',25]] },
-  { id:'scorch', name:'Scorch', cat:'elemental', effect:'Fire Damage', vals:['10%','25%','50%'], unit:'do dano físico vira fogo', applies:'Armas corpo a corpo, bows e crossbows', items:[['Fiery Heart',25],['Green Dragon Scale',5],['Demon Horn',5]] },
+  { id:'scorch', name:'Scorch', cat:'elemental', effect:'Fire Damage', vals:['10%','25%','50%'], unit:'do dano físico vira fogo', applies:'Armas corpo a corpo, bows e crossbows sem dano elemental próprio', items:[['Fiery Heart',25],['Green Dragon Scale',5],['Demon Horn',5]] },
   { id:'venom', name:'Venom', cat:'elemental', effect:'Earth Damage', vals:['10%','25%','50%'], unit:'do dano físico vira terra', applies:'Armas corpo a corpo, bows e crossbows', items:[['Swamp Grass',25],['Poisonous Slime',20],['Slime Heart',2]] },
   { id:'frost', name:'Frost', cat:'elemental', effect:'Ice Damage', vals:['10%','25%','50%'], unit:'do dano físico vira gelo', applies:'Armas corpo a corpo, bows e crossbows', items:[['Frosty Heart',25],['Seacrest Hair',10],['Polar Bear Paw',5]] },
   { id:'electrify', name:'Electrify', cat:'elemental', effect:'Energy Damage', vals:['10%','25%','50%'], unit:'do dano físico vira energia', applies:'Armas corpo a corpo, bows e crossbows', items:[['Rorc Feather',25],['Peacock Feather Fan',5],['Energy Vein',1]] },
@@ -505,7 +508,7 @@ const SLOT_DEFS = [
   { id:'boots', label:'Botas', kinds:['boots'] },
 ];
 const SLOT_BY_ID = Object.fromEntries(SLOT_DEFS.map(d => [d.id, d]));
-const STRIKE_MAGIC = new Set(['Jungle Rod', 'Jungle Wand', 'Rod of Destruction', 'Wand of Destruction', 'Rod of Mayhem', 'Wand of Mayhem', 'Cobra Rod', 'Lion Wand', 'Naga Wand', 'Naga Rod', 'Falcon Rod', 'Falcon Wand', 'Soulhexer', 'Soultainter']);
+const NO_STRIKE = new Set(['Cobra Wand', 'Lion Rod', 'Deepling Fork']); // TibiaWiki, página Strike: vale para rods e wands, menos estes
 const EPIPHANY_HELMETS = new Set(['Falcon Coif', 'Dark Whispers', 'Lion Spangenhelm', 'Stoic Iks Casque', 'Alicorn Headguard', 'Spiritthorn Helmet']);
 const SPEED_OK = new Set(['Pair of Soulwalkers', 'Pair of Soulstalkers']);
 const PROTECTIONS = ['lichshroud', 'snakeskin', 'dragonhide', 'quarascale', 'cloudfabric', 'demonpresence'];
@@ -524,7 +527,7 @@ function allowedFor(it, slotId) {
   const weapon = MELEE.has(k) || DIST.has(k) || MAGIC.has(k);
   if ((weapon || k === 'armor') && !x.has('nv')) A.add('vampirism');
   if ((weapon || k === 'helmet') && !x.has('nd')) A.add('void');
-  if ((MELEE.has(k) || DIST.has(k) || (MAGIC.has(k) && (STRIKE_MAGIC.has(it.n) || x.has('so')))) && !x.has('ns')) A.add('strike');
+  if ((MELEE.has(k) || DIST.has(k) || MAGIC.has(k)) && !x.has('ns') && !NO_STRIKE.has(it.n)) A.add('strike');
   if (MAGIC.has(k) || (k === 'helmet' && (isMageOnly(it.v) || EPIPHANY_HELMETS.has(it.n)))) A.add('epiphany');
   if (k === 'helmet' || DIST.has(k)) A.add('precision');
   if (k === 'helmet' || k === 'sword') A.add('slash');
@@ -532,7 +535,7 @@ function allowedFor(it, slotId) {
   if (k === 'helmet' || k === 'club') A.add('bash');
   if (k === 'helmet' || k === 'fist') A.add('punch');
   if (k === 'helmet' || k === 'shield' || k === 'spellbook') A.add('blockade');
-  if (MELEE.has(k) || DIST.has(k)) ELEMENTALS.forEach(e => A.add(e));
+  if ((MELEE.has(k) || DIST.has(k)) && !x.has('el')) ELEMENTALS.forEach(e => A.add(e)); // armas com elemento próprio não recebem imbui elemental
   if (k === 'armor' || k === 'shield' || k === 'spellbook') PROTECTIONS.forEach(p => A.add(p));
   if (k === 'boots') { A.add('vibrancy'); if (!x.has('sp') || SPEED_OK.has(it.n)) A.add('swiftness'); }
   if (k === 'backpack') A.add('featherweight');
@@ -844,6 +847,7 @@ function renderDetail() {
   head.append(bigTile, t); root.append(head, actions);
   if (!sl.item) { root.append(el('p', { class: 'note empty' }, 'Escolha o item que você usa neste slot. A lista traz só itens imbuíveis.')); return; }
   const allowed = allowedFor(it, d.id); const n = slotCount(it);
+  t.append(el('span', { class: 'meta' }, 'Aceita: ', el('b', {}, allowed.length ? allowed.map(a => IMB_BY_ID[a].name).join(', ') : 'nenhum imbuimento conhecido')));
   const imbs = el('div', { class: 'imbs' });
   for (let i = 0; i < n; i++) {
     const sel = imbOptions(sl.imbs[i], allowed); sel.id = `slot-imb-${d.id}-${i}`;
@@ -926,7 +930,7 @@ function filterPicker() {
 function chooseItem(name) {
   const d = SLOT_BY_ID[pk.slot]; const sl = S.slots[pk.slot];
   sl.item = name; sl.on = true;
-  if (!d.con) { const it = ITEM_BY_NAME.get(name) || null; const allowed = new Set(allowedFor(it, pk.slot)); sl.imbs = sl.imbs.map(i => allowed.has(i) ? i : ''); if (!sl.imbs.some(Boolean)) { const guess = allowed.has('vampirism') ? 'vampirism' : allowed.has('void') ? 'void' : allowed.has('swiftness') ? 'swiftness' : allowed.has('featherweight') ? 'featherweight' : ''; if (guess) sl.imbs[0] = guess; } }
+  if (!d.con) { const it = ITEM_BY_NAME.get(name) || null; const allowed = new Set(allowedFor(it, pk.slot)); sl.imbs = sl.imbs.filter(i => i && allowed.has(i)); while (sl.imbs.length < 3) sl.imbs.push(''); if (!sl.imbs.some(Boolean)) { const guess = allowed.has('vampirism') ? 'vampirism' : allowed.has('void') ? 'void' : allowed.has('swiftness') ? 'swiftness' : allowed.has('featherweight') ? 'featherweight' : ''; if (guess) sl.imbs[0] = guess; } }
   closePicker(); update(); renderDetail();
   toast(`${d.label}: ${name}`);
 }
