@@ -3,15 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Calculadora de custo por hora dos imbuimentos do Tibia, com preços de market por mundo.">
+<meta name="description" content="Calculadora de custo por hora dos imbuimentos do Tibia, com inventário igual ao do jogo e preços de market por mundo.">
 <link rel="icon" href="sprites/Silver_Token.gif">
-<!--ARTIFACT-START-->
 <title>Imbui</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600;700&family=Grenze:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-/* Layout: one scrolling control panel. Summary strip first, then the character's set, the price book (one card per imbuement) and the shopping list. Sprites sit in inventory-style tiles, numbers in mono. Dark-first, like the game client; parchment in light mode. */
+/* Layout: one scrolling control panel. Summary strip, then the inventory (laid out like the game's equipment window) with a detail panel for the selected slot, the price book (one card per imbuement) and the shopping list. Sprites sit in inventory-style tiles, numbers in mono. Dark-first, like the game client; parchment in light mode. */
 :root{
   --bg:#15110e; --surface:#1e1815; --surface-2:#271f19; --surface-3:#2f261f;
   --line:#3a2f27; --line-strong:#55463a;
@@ -73,6 +72,7 @@ input::placeholder{color:var(--fg-faint)}
 section{margin-top:40px}
 .sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px;margin-bottom:16px}
 .sec-head p{max-width:62ch;color:var(--fg-muted)}
+.sprite{image-rendering:pixelated;image-rendering:crisp-edges}
 
 /* header */
 .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 28px;padding-bottom:18px;border-bottom:1px solid var(--line)}
@@ -123,57 +123,98 @@ section{margin-top:40px}
 .kpi .k{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .kpi input{width:64px;padding:3px 8px;text-align:right}
 .bars{margin-top:14px;display:flex;flex-direction:column;gap:8px}
-.bar{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;align-items:center;gap:10px;font-size:13.5px}
+.bar{display:grid;grid-template-columns:minmax(90px,170px) 1fr auto;align-items:center;gap:10px;font-size:13.5px}
 .bar .lbl{color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar .track{height:10px;background:var(--surface-3);border-radius:3px;overflow:hidden}
 .bar .fill{height:100%;background:var(--accent);border-radius:3px;min-width:2px;transition:width .25s}
 .bar .val{font-size:13px}
 .bars-empty{color:var(--fg-faint);font-size:13.5px}
 
-/* set */
-.slots{display:flex;flex-direction:column;gap:10px}
-.slot{display:grid;grid-template-columns:auto auto minmax(140px,1fr) minmax(220px,2fr) auto;align-items:center;gap:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
-.slot.off{opacity:.55}
-.slot .slot-main{display:flex;flex-direction:column;gap:3px;min-width:0}
-.slot .slot-main .eyebrow{font-size:11px}
-.slot .slot-name{width:100%;max-width:220px;padding:5px 8px;font-weight:500;background:transparent;border-color:transparent}
-.slot .slot-name:hover,.slot .slot-name:focus{background:var(--surface-2);border-color:var(--line)}
-.slot .slot-imbs{display:flex;flex-wrap:wrap;gap:8px}
-.slot .slot-imbs select{padding:6px 8px;font-size:13.5px;max-width:100%}
-.slot .slot-imbs select.chosen{border-color:var(--accent);background:var(--accent-soft)}
-.slot .slot-cost{text-align:right;font-weight:600;font-size:16px;min-width:100px}
-.slot .slot-cost .per{display:block;font-size:11px;color:var(--fg-muted);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* inventory (game layout) */
+.setwrap{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:18px;align-items:start}
+.inv{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.inv-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-areas:"amulet helmet backpack" "weapon armor shield" "ring legs quiver" ". boots .";gap:10px}
+.cell{aspect-ratio:1;border:1px solid var(--slot-line);background:var(--slot);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:18px 6px 8px;position:relative;min-width:0;box-shadow:0 1px 0 var(--slot-hi) inset,0 0 0 1px rgba(0,0,0,.2) inset;text-align:center}
+.cell:hover{border-color:var(--accent)}
+.cell img{width:56px;height:56px;image-rendering:pixelated;image-rendering:crisp-edges}
+.cell .ph{width:36px;height:36px;border:2px dashed var(--slot-line);border-radius:5px;display:grid;place-items:center;color:var(--fg-faint);font-size:22px;line-height:1}
+.cell .nm{font-size:11px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
+.cell .lbl{position:absolute;top:5px;left:7px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-faint);font-weight:600}
+.cell .cost{position:absolute;top:4px;right:6px;font-size:10.5px;color:var(--accent);font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.cell.sel{outline:2px solid var(--accent);outline-offset:1px}
+.cell.off .nm,.cell.off img{opacity:.4}
+.cell.off .cost{color:var(--fg-faint)}
+.cell.na{cursor:default;border-style:dashed;box-shadow:none}
+.cell.na:hover{border-color:var(--slot-line)}
+.cell.na .lbl{color:var(--fg-faint)}
+.inv-total{margin-top:14px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.inv-total .v{font:600 20px/1 var(--font-mono);color:var(--accent)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;font-weight:500;color:var(--fg-muted);background:var(--surface)}
+.chip:hover{border-color:var(--accent);color:var(--fg)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+
+/* detail panel */
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.detail .head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.detail .head .big-tile{width:72px;height:72px;display:grid;place-items:center;background:var(--slot);border:1px solid var(--slot-line);border-radius:8px;flex:0 0 auto}
+.detail .head .big-tile img{width:64px;height:64px;image-rendering:pixelated;image-rendering:crisp-edges}
+.detail .head .big-tile.empty::before{content:"";width:28px;height:28px;border:2px dashed var(--slot-line);border-radius:4px}
+.detail .head .t{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 200px}
+.detail .head .t h3{font-size:22px}
+.detail .head .meta{font-size:13px;color:var(--fg-muted)}
+.detail .head .meta b{color:var(--fg);font-weight:600}
+.detail .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.detail .imbs{display:flex;flex-direction:column;gap:8px}
+.detail .imb-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px}
+.detail .imb-row .n{font-size:12px;color:var(--fg-faint);width:52px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.detail .imb-row select{width:100%}
+.detail .imb-row select.chosen{border-color:var(--accent);background:var(--accent-soft)}
+.detail .imb-row .c{font-size:13px;min-width:90px;text-align:right;color:var(--fg-muted)}
+.detail .fields{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.detail .fields label{display:flex;flex-direction:column;gap:4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-muted);font-weight:600}
+.detail .fields input,.detail .fields select{letter-spacing:0;text-transform:none;font-weight:500}
+.detail .fields input.hrs{width:84px;text-align:right}
+.detail .cost-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--fg-muted)}
+.detail .cost-line .v{font:600 24px/1 var(--font-mono);color:var(--accent)}
+.detail .note{font-size:13px;color:var(--fg-muted);max-width:60ch}
+.detail .empty{color:var(--fg-faint)}
 .switch{position:relative;display:inline-block;width:40px;height:22px;flex:0 0 auto}
 .switch input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
 .switch span{position:absolute;inset:0;background:var(--surface-3);border:1px solid var(--line-strong);border-radius:11px;transition:background .15s}
 .switch span::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--fg-muted);transition:transform .15s,background .15s}
 .switch input:checked+span{background:var(--accent);border-color:var(--accent)}
 .switch input:checked+span::after{transform:translateX(18px);background:var(--accent-ink)}
-.presets{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;font-weight:500;color:var(--fg-muted);background:var(--surface)}
-.chip:hover{border-color:var(--accent);color:var(--fg)}
-.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
-
-/* consumables */
-.cons{display:flex;flex-direction:column;gap:10px}
-.con{display:grid;grid-template-columns:auto auto minmax(140px,1.4fr) auto auto auto auto auto;align-items:center;gap:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
-.con.off{opacity:.55}
-.con .f{display:flex;flex-direction:column;gap:3px;min-width:0}
-.con .f .eyebrow{font-size:10.5px}
-.con input.name{padding:5px 8px;font-weight:500;background:transparent;border-color:transparent;width:100%}
-.con input.name:hover,.con input.name:focus{background:var(--surface-2);border-color:var(--line)}
-.con input.gold{width:104px}
-.con input.hrs{width:72px;text-align:right}
-.con select{padding:6px 8px;font-size:13.5px}
-.con .cost{text-align:right;font-weight:600;font-size:16px;min-width:96px}
-.con .cost .per{display:block;font-size:11px;color:var(--fg-muted);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
-.icon-btn{width:32px;height:32px;border-radius:6px;color:var(--fg-muted);display:grid;place-items:center;font-size:18px;line-height:1}
-.icon-btn:hover{background:var(--surface-3);color:var(--bad)}
+.sw-lbl{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500;cursor:pointer}
 .btn{padding:9px 16px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;font-size:14px}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.primary:hover{filter:brightness(1.06)}
 .btn.ghost{background:transparent}
+.btn.sm{padding:6px 12px;font-size:13px}
+
+/* picker dialog */
+dialog.picker{background:var(--surface);color:var(--fg);border:1px solid var(--line-strong);border-radius:14px;padding:0;width:min(600px,calc(100vw - 32px));max-height:min(82vh,760px);box-shadow:0 24px 60px rgba(0,0,0,.5)}
+dialog.picker::backdrop{background:rgba(0,0,0,.55)}
+.pk{display:flex;flex-direction:column;max-height:min(82vh,760px)}
+.pk-head{padding:16px 18px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+.pk-head .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pk-head input.search{width:100%;font-size:16px;padding:10px 12px}
+.pk-head .filters{display:flex;flex-wrap:wrap;gap:6px}
+.pk-head .chip{padding:4px 10px;font-size:12px}
+.pk-list{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:2px;min-height:120px}
+.pk-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:6px 10px;border-radius:8px;text-align:left;width:100%}
+.pk-row:hover,.pk-row.hl{background:var(--surface-3)}
+.pk-row.cur{background:var(--accent-soft)}
+.pk-row .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-row .meta{font-size:12px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-row .right{font-size:12px;color:var(--fg-muted);text-align:right;white-space:nowrap}
+.pk-row .right b{color:var(--fg);font-family:var(--font-mono)}
+.pk-row.custom{border:1px dashed var(--line-strong)}
+.pk-foot{padding:10px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px;color:var(--fg-muted)}
+.pk-empty{padding:30px;text-align:center;color:var(--fg-faint)}
+.icon-btn{width:32px;height:32px;border-radius:6px;color:var(--fg-muted);display:grid;place-items:center;font-size:20px;line-height:1}
+.icon-btn:hover{background:var(--surface-3);color:var(--fg)}
 
 /* price book */
 .cats{display:flex;flex-wrap:wrap;gap:8px}
@@ -208,8 +249,8 @@ tr:last-child td{border-bottom:0}
 td .tile{width:36px;height:36px}
 td .tile img{width:28px;height:28px}
 tfoot td{font-weight:600;background:var(--surface-2)}
-.cell{display:flex;align-items:center;gap:10px}
-.cell .for{font-size:12px;color:var(--fg-muted)}
+.cell-row{display:flex;align-items:center;gap:10px}
+td.for{font-size:12px;color:var(--fg-muted)}
 .empty-row td{color:var(--fg-faint);text-align:center;padding:22px}
 
 /* share */
@@ -224,10 +265,8 @@ tfoot td{font-weight:600;background:var(--surface-2)}
 
 @media (max-width:860px){
   .summary{grid-template-columns:1fr}
-  .slot{grid-template-columns:auto auto 1fr auto;grid-template-areas:"sw tile main cost" "imbs imbs imbs imbs"}
-  .slot .switch{grid-area:sw}.slot .tile{grid-area:tile}.slot .slot-main{grid-area:main}.slot .slot-imbs{grid-area:imbs}.slot .slot-cost{grid-area:cost}
-  .con{grid-template-columns:auto auto 1fr auto;grid-template-areas:"sw tile name cost" "price cur hrs del"}
-  .con .switch{grid-area:sw}.con .tile{grid-area:tile}.con .f.name-f{grid-area:name}.con .f.price-f{grid-area:price}.con .f.cur-f{grid-area:cur}.con .f.hrs-f{grid-area:hrs}.con .cost{grid-area:cost}.con .icon-btn{grid-area:del;justify-self:end}
+  .setwrap{grid-template-columns:1fr}
+  .inv{max-width:420px}
   .share{grid-template-columns:1fr}
   .hero .big{font-size:42px}
 }
@@ -237,6 +276,10 @@ tfoot td{font-weight:600;background:var(--surface-2)}
   .grid{grid-template-columns:1fr}
   .item{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"tile nm price" "tile nm sub"}
   .item .tile{grid-area:tile}.item .nm{grid-area:nm}.item input{grid-area:price;width:100px}.item .sub{grid-area:sub;min-width:0}
+  .cell img{width:44px;height:44px}
+  .cell{padding-top:16px}
+  .detail .imb-row{grid-template-columns:auto minmax(0,1fr);}
+  .detail .imb-row .c{grid-column:2;text-align:left}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
@@ -282,7 +325,7 @@ tfoot td{font-weight:600;background:var(--surface-2)}
       </select>
     </span>
     <button type="button" class="btn primary" id="pull-market">Puxar preços do market</button>
-    <p class="status" id="market-status">Preenche todos os itens e os tokens com o market do mundo acima, via TibiaMarket.</p>
+    <p class="status" id="market-status">Preenche os itens de imbuimento, os tokens e os anéis e amuletos com o market do mundo acima, via TibiaMarket.</p>
   </div>
 
   <div class="summary">
@@ -295,14 +338,14 @@ tfoot td{font-weight:600;background:var(--surface-2)}
     <div class="tiles">
       <div class="kpi"><span class="eyebrow k">Hunt de <input id="hours" type="number" min="0.5" step="0.5" aria-label="Horas de hunt"> h</span><span class="v" id="hunt-total">0</span><span class="muted" style="font-size:12.5px">o que a hunt precisa render só para pagar o imbui</span></div>
       <div class="kpi"><span class="eyebrow">Imbuir tudo agora</span><span class="v" id="apply-total">0</span><span class="muted" style="font-size:12.5px"><span id="apply-count">0</span> aplicações · itens + taxa</span></div>
-      <div class="kpi"><span class="eyebrow">Ciclo completo (20 h)</span><span class="v" id="cycle-total">0</span><span class="muted" style="font-size:12.5px">imbuimentos + consumíveis por 20 h</span></div>
+      <div class="kpi"><span class="eyebrow">Ciclo completo (20 h)</span><span class="v" id="cycle-total">0</span><span class="muted" style="font-size:12.5px">imbuimentos + anel e amuleto por 20 h</span></div>
       <div class="kpi"><span class="eyebrow">Itens sem preço</span><span class="v" id="missing-count">0</span><span class="muted" style="font-size:12.5px" id="missing-hint">todos os itens do set têm preço</span></div>
     </div>
   </div>
 
   <section id="set">
     <div class="sec-head">
-      <div><h2>Meu set</h2><p>Ligue os slots que você usa e escolha até três imbuimentos em cada. O nome do item é livre.</p></div>
+      <div><h2>Meu set</h2><p>Clique em um slot para escolher o item. A lista mostra só o que pode ser imbuído naquele slot, com os imbuimentos que o item aceita. Anel e amuleto entram como custo por tempo de uso.</p></div>
       <div class="presets" id="presets">
         <span class="eyebrow">Preset</span>
         <button type="button" class="chip" data-preset="saturnsz">Saturnsz · ED</button>
@@ -311,15 +354,13 @@ tfoot td{font-weight:600;background:var(--surface-2)}
         <button type="button" class="chip" data-preset="paladin">Paladin</button>
       </div>
     </div>
-    <div class="slots" id="slots"></div>
-  </section>
-
-  <section id="consumables">
-    <div class="sec-head">
-      <div><h2>Consumíveis por hora</h2><p>Anéis, amuletos e o que mais acaba durante a hunt. Preço por unidade, moeda e quanto tempo dura.</p></div>
-      <button type="button" class="btn" id="add-con">+ Adicionar</button>
+    <div class="setwrap">
+      <div class="inv">
+        <div class="inv-grid" id="inv"></div>
+        <div class="inv-total"><span class="muted">Set por hora</span><span class="v" id="inv-total">0</span></div>
+      </div>
+      <div class="detail" id="detail"></div>
     </div>
-    <div class="cons" id="cons"></div>
   </section>
 
   <section id="prices">
@@ -375,30 +416,45 @@ tfoot td{font-weight:600;background:var(--surface-2)}
         <p class="note" id="saved-note"></p>
       </div>
     </div>
-    <p class="foot-note">Taxas e receitas conforme a <a href="https://tibia.fandom.com/wiki/Imbuing" target="_blank" rel="noopener">TibiaWiki</a> (Powerful 250.000 gp, Intricate 60.000 gp, Basic 7.500 gp, duração de 20 horas de uso, sucesso garantido). Preços de market vêm do <a href="https://www.tibiamarket.top/" target="_blank" rel="noopener">TibiaMarket</a>, que depende de scans feitos por jogadores: veja a data do último scan antes de confiar. Dados de personagem pelo <a href="https://tibiadata.com/" target="_blank" rel="noopener">TibiaData</a>. Tibia e os sprites dos itens são © CipSoft GmbH. Ferramenta de fã, sem vínculo com a CipSoft.</p>
+    <p class="foot-note">Taxas, receitas e lista de itens imbuíveis conforme a <a href="https://tibia.fandom.com/wiki/Imbuing" target="_blank" rel="noopener">TibiaWiki</a> (Powerful 250.000 gp, Intricate 60.000 gp, Basic 7.500 gp, duração de 20 horas de uso, sucesso garantido). Os imbuimentos que cada item aceita seguem as regras por tipo de item da wiki, com as exceções que ela registra; o jogo manda. Preços de market vêm do <a href="https://www.tibiamarket.top/" target="_blank" rel="noopener">TibiaMarket</a>, que depende de scans feitos por jogadores: veja a data do último scan antes de confiar. Dados de personagem pelo <a href="https://tibiadata.com/" target="_blank" rel="noopener">TibiaData</a>. Tibia e os sprites dos itens são © CipSoft GmbH. Ferramenta de fã, sem vínculo com a CipSoft.</p>
   </section>
 </div>
+
+<dialog class="picker" id="picker" aria-labelledby="pk-title">
+  <div class="pk">
+    <div class="pk-head">
+      <div class="row"><h3 id="pk-title">Escolher item</h3><button type="button" class="icon-btn" id="pk-close" aria-label="Fechar">×</button></div>
+      <input class="search" id="pk-search" type="text" autocomplete="off" placeholder="Digite para pesquisar…">
+      <div class="filters" id="pk-filters"></div>
+    </div>
+    <div class="pk-list" id="pk-list"></div>
+    <div class="pk-foot"><span id="pk-count"></span><span>Enter escolhe o primeiro · Esc fecha</span></div>
+  </div>
+</dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="items.js"></script>
 <script>
 (() => {
 'use strict';
-const STORE_KEY = 'imbui.v1';
+const STORE_KEY = 'imbui.v2';
+const OLD_KEY = 'imbui.v1';
 const FEES = { basic: 7500, intricate: 60000, powerful: 250000 };
 const TIER_ITEMS = { basic: 1, intricate: 2, powerful: 3 };
 const TIER_LABEL = { basic: 'Basic', intricate: 'Intricate', powerful: 'Powerful' };
 const HOURS = 20;
 const MARKET_API = 'https://api.tibiamarket.top';
 const CHAR_API = 'https://api.tibiadata.com/v4/character/';
+const DATA = window.IMBUI_DATA || { items: [], cons: [] };
 
 const CATS = { leech: 'Leech e crítico', skill: 'Skills', elemental: 'Dano elemental', protection: 'Proteção', support: 'Suporte' };
 
 // Receitas conforme TibiaWiki (Imbuing), outubro de 2026. Itens em ordem de tier: Basic usa o 1º, Intricate os dois primeiros, Powerful os três.
 const IMBS = [
-  { id:'vampirism', name:'Vampirism', cat:'leech', effect:'Life Leech', vals:['5%','10%','25%'], unit:'de leech de vida', applies:'Armas e armaduras', items:[['Vampire Teeth',25],['Bloody Pincers',15],['Piece of Dead Brain',5]] },
-  { id:'void', name:'Void', cat:'leech', effect:'Mana Leech', vals:['3%','5%','8%'], unit:'de leech de mana', applies:'Armas e capacetes', items:[['Rope Belt',25],['Silencer Claws',25],['Some Grimeleech Wings',5]] },
+  { id:'vampirism', name:'Vampirism', cat:'leech', effect:'Life Leech', vals:['5%','10%','25%'], unit:'de leech de vida', applies:'Armas (corpo a corpo, bows, crossbows, wands e rods) e armaduras', items:[['Vampire Teeth',25],['Bloody Pincers',15],['Piece of Dead Brain',5]] },
+  { id:'void', name:'Void', cat:'leech', effect:'Mana Leech', vals:['3%','5%','8%'], unit:'de leech de mana', applies:'Armas (corpo a corpo, bows, crossbows, wands e rods) e capacetes', items:[['Rope Belt',25],['Silencer Claws',25],['Some Grimeleech Wings',5]] },
   { id:'strike', name:'Strike', cat:'leech', effect:'Critical Hit', vals:['+5%','+15%','+40%'], unit:'de dano crítico (5% de chance)', applies:'Armas corpo a corpo, bows, crossbows e alguns wands e rods', items:[['Protective Charm',20],['Sabretooth',25],['Vexclaw Talon',5]] },
-  { id:'epiphany', name:'Epiphany', cat:'skill', effect:'Magic Level', vals:['+1','+2','+4'], unit:'Magic Level', applies:'Wands e capacetes exclusivos de mago', items:[['Elvish Talisman',25],['Broken Shamanic Staff',15],['Strand of Medusa Hair',15]] },
+  { id:'epiphany', name:'Epiphany', cat:'skill', effect:'Magic Level', vals:['+1','+2','+4'], unit:'Magic Level', applies:'Wands, rods e capacetes exclusivos de mago (mais Falcon Coif e alguns outros)', items:[['Elvish Talisman',25],['Broken Shamanic Staff',15],['Strand of Medusa Hair',15]] },
   { id:'precision', name:'Precision', cat:'skill', effect:'Distance Fighting', vals:['+1','+2','+4'], unit:'Distance', applies:'Capacetes, bows e crossbows', items:[['Elven Scouting Glass',25],['Elven Hoof',20],['Metal Spike',10]] },
   { id:'slash', name:'Slash', cat:'skill', effect:'Sword Fighting', vals:['+1','+2','+4'], unit:'Sword', applies:'Capacetes e espadas', items:[["Lion's Mane",25],["Mooh'tah Shell",25],['War Crystal',5]] },
   { id:'chop', name:'Chop', cat:'skill', effect:'Axe Fighting', vals:['+1','+2','+4'], unit:'Axe', applies:'Capacetes e machados', items:[['Orc Tooth',20],['Battle Stone',25],['Moohtant Horn',20]] },
@@ -417,10 +473,11 @@ const IMBS = [
   { id:'cloudfabric', name:'Cloud Fabric', cat:'protection', effect:'Energy Protection', vals:['3%','8%','15%'], unit:'de proteção contra energia', applies:'Armaduras, escudos e spellbooks', items:[['Wyvern Talisman',20],['Crawler Head Plating',15],['Wyrm Scale',10]] },
   { id:'demonpresence', name:'Demon Presence', cat:'protection', effect:'Holy Protection', vals:['3%','8%','15%'], unit:'de proteção contra sagrado', applies:'Armaduras, escudos e spellbooks', items:[['Cultish Robe',25],['Cultish Mask',25],['Hellspawn Tail',20]] },
   { id:'vibrancy', name:'Vibrancy', cat:'support', effect:'Paralysis Deflection', vals:['15%','25%','50%'], unit:'de chance de desviar paralisia', applies:'Botas', items:[['Wereboar Hooves',20],['Crystallized Anger',15],['Quill',5]] },
-  { id:'swiftness', name:'Swiftness', cat:'support', effect:'Walking Speed', vals:['+10','+15','+30'], unit:'de velocidade', applies:'Botas', items:[['Damselfly Wing',15],['Compass',25],['Waspoid Wing',20]] },
+  { id:'swiftness', name:'Swiftness', cat:'support', effect:'Walking Speed', vals:['+10','+15','+30'], unit:'de velocidade', applies:'Botas sem bônus próprio de velocidade (exceto Soulwalkers e Soulstalkers)', items:[['Damselfly Wing',15],['Compass',25],['Waspoid Wing',20]] },
   { id:'featherweight', name:'Featherweight', cat:'support', effect:'Capacity', vals:['3%','8%','15%'], unit:'de capacidade', applies:'Mochilas (conta 20 h corridas, mesmo fora de combate)', items:[['Fairy Wings',20],['Little Bowl of Myrrh',10],['Goosebump Leather',5]] },
 ];
 const IMB_BY_ID = Object.fromEntries(IMBS.map(i => [i.id, i]));
+const IMB_ORDER = Object.fromEntries(IMBS.map((i, n) => [i.id, n]));
 const keyOf = n => n.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '_');
 const spriteOf = n => 'sprites/' + n.replace(/'/g, '').replace(/ /g, '_') + '.gif';
 const ITEM_NAMES = {}; for (const imb of IMBS) for (const [n] of imb.items) ITEM_NAMES[keyOf(n)] = n;
@@ -428,6 +485,60 @@ const ITEM_NAMES = {}; for (const imb of IMBS) for (const [n] of imb.items) ITEM
 // Ids dos itens no TibiaMarket (api.tibiamarket.top/item_metadata).
 const API_IDS = {battle_stone:11447, blazing_bone:16131, bloody_pincers:9633, brimstone_fangs:11702, brimstone_shell:11703, broken_shamanic_staff:11452, compass:10302, crawler_head_plating:14079, crystallized_anger:23507, cultish_mask:9638, cultish_robe:9639, cyclops_toe:9657, damselfly_wing:17458, deepling_warts:14012, demon_horn:5954, demonic_skeletal_hand:9647, draken_sulphur:11658, elven_hoof:18994, elven_scouting_glass:11464, elvish_talisman:9635, energy_vein:23508, fairy_wings:25694, fiery_heart:9636, flask_of_embalming_fluid:11466, frazzle_skin:20199, frosty_heart:9661, gloom_wolf_fur:22007, gold_brocaded_cloth:40529, goosebump_leather:20205, green_dragon_leather:5877, green_dragon_scale:5920, hellspawn_tail:10304, little_bowl_of_myrrh:25702, mantassin_tail:11489, metal_spike:10298, moohtant_horn:21200, mystical_hourglass:9660, ogre_nose_ring:22189, orc_tooth:10196, peacock_feather_fan:21975, petrified_scream:10420, piece_of_dead_brain:9663, piece_of_scarab_shell:9641, piece_of_swampling_wood:17823, pile_of_grave_earth:11484, poisonous_slime:9640, polar_bear_paw:9650, protective_charm:11444, quill:28567, rope_belt:11492, rorc_feather:18993, sabretooth:10311, seacrest_hair:21801, silencer_claws:20200, slime_heart:21194, snake_skin:9694, some_grimeleech_wings:22730, strand_of_medusa_hair:10309, swamp_grass:9686, tarantula_egg:10281, thick_fur:10307, vampire_teeth:9685, vexclaw_talon:22728, war_crystal:9654, waspoid_wing:14081, wereboar_hooves:22053, winter_wolf_fur:10295, wyrm_scale:9665, wyvern_talisman:9644, silver_token:22516, gold_token:22721};
 const ID_TO_KEY = Object.fromEntries(Object.entries(API_IDS).map(([k, v]) => [v, k]));
+
+// ---------- item database (items.js, from TibiaWiki) ----------
+const ITEMS = DATA.items; const CONS = DATA.cons;
+const ITEM_BY_NAME = new Map(ITEMS.map(i => [i.n, i]));
+const CON_BY_NAME = new Map(CONS.map(c => [c.n, c]));
+const CON_ID_TO_NAME = new Map(CONS.filter(c => c.id).map(c => [c.id, c.n]));
+const KIND_LABEL = { rod: 'Rod', wand: 'Wand', bow: 'Bow', crossbow: 'Crossbow', axe: 'Machado', club: 'Clava', sword: 'Espada', fist: 'Arma de punho', helmet: 'Capacete', armor: 'Armadura', shield: 'Escudo', spellbook: 'Spellbook', boots: 'Botas', backpack: 'Mochila' };
+const SLOT_DEFS = [
+  { id:'amulet', label:'Amuleto', con:true },
+  { id:'helmet', label:'Capacete', kinds:['helmet'] },
+  { id:'backpack', label:'Mochila', kinds:['backpack'] },
+  { id:'weapon', label:'Arma', kinds:['rod','wand','bow','crossbow','axe','club','sword','fist'] },
+  { id:'armor', label:'Armadura', kinds:['armor'] },
+  { id:'shield', label:'Escudo / Spellbook', kinds:['shield','spellbook'] },
+  { id:'ring', label:'Anel', con:true },
+  { id:'legs', label:'Calça', na:true },
+  { id:'quiver', label:'Quiver', na:true },
+  { id:'boots', label:'Botas', kinds:['boots'] },
+];
+const SLOT_BY_ID = Object.fromEntries(SLOT_DEFS.map(d => [d.id, d]));
+const STRIKE_MAGIC = new Set(['Jungle Rod', 'Jungle Wand', 'Rod of Destruction', 'Wand of Destruction', 'Rod of Mayhem', 'Wand of Mayhem', 'Cobra Rod', 'Lion Wand', 'Naga Wand', 'Naga Rod', 'Falcon Rod', 'Falcon Wand', 'Soulhexer', 'Soultainter']);
+const EPIPHANY_HELMETS = new Set(['Falcon Coif', 'Dark Whispers', 'Lion Spangenhelm', 'Stoic Iks Casque', 'Alicorn Headguard', 'Spiritthorn Helmet']);
+const SPEED_OK = new Set(['Pair of Soulwalkers', 'Pair of Soulstalkers']);
+const PROTECTIONS = ['lichshroud', 'snakeskin', 'dragonhide', 'quarascale', 'cloudfabric', 'demonpresence'];
+const ELEMENTALS = ['scorch', 'venom', 'frost', 'electrify', 'reap'];
+const MELEE = new Set(['axe', 'club', 'sword', 'fist']), DIST = new Set(['bow', 'crossbow']), MAGIC = new Set(['rod', 'wand']);
+const isMageOnly = v => !!v && !/EK|RP|MK/.test(v) && /ED|MS/.test(v);
+// Regras por tipo de item (TibiaWiki: Imbuing e páginas de cada imbuimento) mais as exceções registradas nas páginas dos itens.
+function allowedFor(it, slotId) {
+  const A = new Set();
+  if (!it) { // item fora da lista: regras genéricas do slot
+    const g = { helmet: ['void','epiphany','precision','slash','chop','bash','punch','blockade'], armor: ['vampirism', ...PROTECTIONS], shield: ['blockade', ...PROTECTIONS], boots: ['vibrancy','swiftness'], backpack: ['featherweight'],
+      weapon: ['vampirism','void','strike','epiphany','precision','slash','chop','bash','punch', ...ELEMENTALS] }[slotId] || [];
+    return g;
+  }
+  const k = it.k, x = new Set(it.x || []);
+  const weapon = MELEE.has(k) || DIST.has(k) || MAGIC.has(k);
+  if ((weapon || k === 'armor') && !x.has('nv')) A.add('vampirism');
+  if ((weapon || k === 'helmet') && !x.has('nd')) A.add('void');
+  if ((MELEE.has(k) || DIST.has(k) || (MAGIC.has(k) && (STRIKE_MAGIC.has(it.n) || x.has('so')))) && !x.has('ns')) A.add('strike');
+  if (MAGIC.has(k) || (k === 'helmet' && (isMageOnly(it.v) || EPIPHANY_HELMETS.has(it.n)))) A.add('epiphany');
+  if (k === 'helmet' || DIST.has(k)) A.add('precision');
+  if (k === 'helmet' || k === 'sword') A.add('slash');
+  if (k === 'helmet' || k === 'axe') A.add('chop');
+  if (k === 'helmet' || k === 'club') A.add('bash');
+  if (k === 'helmet' || k === 'fist') A.add('punch');
+  if (k === 'helmet' || k === 'shield' || k === 'spellbook') A.add('blockade');
+  if (MELEE.has(k) || DIST.has(k)) ELEMENTALS.forEach(e => A.add(e));
+  if (k === 'armor' || k === 'shield' || k === 'spellbook') PROTECTIONS.forEach(p => A.add(p));
+  if (k === 'boots') { A.add('vibrancy'); if (!x.has('sp') || SPEED_OK.has(it.n)) A.add('swiftness'); }
+  if (k === 'backpack') A.add('featherweight');
+  return [...A].sort((a, b) => IMB_ORDER[a] - IMB_ORDER[b]);
+}
+const slotCount = (it) => it ? Math.max(1, Math.min(3, it.s || 1)) : 3;
 
 // Preços iniciais: planilha imbui.xlsx (2026). Bowl of Myrrh estava 2 gp na planilha, corrigido para o preço de referência do outro mundo.
 const DEFAULT_PRICES = {
@@ -438,40 +549,38 @@ const DEFAULT_PRICES = {
   elven_scouting_glass: 375, elven_hoof: 10800, metal_spike: 800,
   fairy_wings: 900, little_bowl_of_myrrh: 8800, goosebump_leather: 800,
 };
-const SLOT_DEFS = [
-  { id:'weapon', label:'Arma', sprite:'Soulhexer' },
-  { id:'helmet', label:'Capacete', sprite:'Gnome_Helmet' },
-  { id:'armor', label:'Armadura', sprite:'Bear_Skin' },
-  { id:'legs', label:'Calça', sprite:'Soulmantle' },
-  { id:'boots', label:'Botas', sprite:'Soulstrider' },
-  { id:'shield', label:'Escudo / Spellbook', sprite:'Spellbook_of_Vigilance' },
-  { id:'backpack', label:'Mochila', sprite:'Backpack' },
-];
-const PRESETS = {
-  saturnsz: { weapon:['Rod',1,['vampirism','strike']], helmet:['Helmet',1,['void','epiphany']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',0,['swiftness']], shield:['Spellbook',0,[]], backpack:['Backpack',0,['featherweight']] },
-  mage: { weapon:['Rod / Wand',1,['vampirism','strike']], helmet:['Helmet',1,['void','epiphany']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',1,['swiftness']], shield:['Spellbook',0,['blockade']], backpack:['Backpack',0,['featherweight']] },
-  knight: { weapon:['Weapon',1,['vampirism','void','strike']], helmet:['Helmet',1,['void','slash']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',1,['swiftness']], shield:['Shield',0,['blockade']], backpack:['Backpack',0,['featherweight']] },
-  paladin: { weapon:['Bow / Crossbow',1,['vampirism','void','strike']], helmet:['Helmet',1,['void','precision']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',1,['swiftness']], shield:['—',0,[]], backpack:['Backpack',0,['featherweight']] },
+// Anel e amuleto: preço por carga (ou por unidade) e moeda. Arboreal Ring e Theurgic Amulet recarregam com Silver Tokens.
+const DEFAULT_CON_PRICES = {
+  'Collar of Green Plasma': { price: 6000, cur: 'gold' }, 'Ring of Green Plasma': { price: 11000, cur: 'gold' },
+  'Arboreal Ring': { price: 5, cur: 'silver' }, 'Alicorn Ring': { price: 5, cur: 'silver' }, 'Arcanomancer Sigil': { price: 5, cur: 'silver' }, 'Spiritthorn Ring': { price: 5, cur: 'silver' }, 'Ethereal Ring': { price: 5, cur: 'silver' },
+  'Enchanted Theurgic Amulet': { price: 2, cur: 'silver' },
 };
-const DEFAULT_CONS = [
-  { name:'Arboreal Ring', sprite:'Arboreal_Ring', price:5, cur:'silver', hours:3, on:1 },
-  { name:'Enchanted Theurgic Amulet', sprite:'Enchanted_Theurgic_Amulet', price:2, cur:'silver', hours:2, on:0 },
-  { name:'Plasma Amulet', sprite:'', price:6000, cur:'gold', hours:0.5, on:1 },
-  { name:'Plasma Ring', sprite:'', price:11000, cur:'gold', hours:0.5, on:0 },
-];
+const PRESETS = {
+  saturnsz: { weapon: ['Soulhexer', 1, ['vampirism', 'strike']], helmet: ['Gnome Helmet', 1, ['void', 'epiphany']], armor: ['Bear Skin', 1, ['vampirism']], shield: ['Arboreal Tome', 0, []], boots: ['Pair of Dreamwalkers', 0, ['swiftness']], backpack: ['Backpack', 0, ['featherweight']], amulet: ['Collar of Green Plasma', 1], ring: ['Arboreal Ring', 1] },
+  mage: { weapon: ['Falcon Rod', 1, ['vampirism', 'strike']], helmet: ['Falcon Circlet', 1, ['void', 'epiphany']], armor: ['Bear Skin', 1, ['vampirism']], shield: ['Arboreal Tome', 0, []], boots: ['Pair of Dreamwalkers', 1, ['swiftness']], backpack: ['Backpack', 0, ['featherweight']], amulet: ['Collar of Green Plasma', 1], ring: ['Ring of Green Plasma', 0] },
+  knight: { weapon: ['Soulcutter', 1, ['vampirism', 'void', 'strike']], helmet: ['Falcon Coif', 1, ['void', 'slash']], armor: ['Falcon Plate', 1, ['vampirism']], shield: ['Falcon Escutcheon', 0, ['blockade']], boots: ['Pair of Soulwalkers', 1, ['swiftness']], backpack: ['Backpack', 0, ['featherweight']], amulet: ['Collar of Red Plasma', 1], ring: ['Ring of Red Plasma', 0] },
+  paladin: { weapon: ['Soulpiercer', 1, ['vampirism', 'void', 'strike']], helmet: ['Falcon Coif', 1, ['void', 'precision']], armor: ['Falcon Plate', 1, ['vampirism']], shield: ['', 0, []], boots: ['Pair of Soulstalkers', 1, ['swiftness']], backpack: ['Backpack', 0, ['featherweight']], amulet: ['Collar of Blue Plasma', 1], ring: ['Ring of Blue Plasma', 0] },
+};
+function slotsFromPreset(p) {
+  const pr = PRESETS[p]; const out = {};
+  for (const d of SLOT_DEFS) {
+    if (d.na) continue;
+    const e = pr[d.id] || ['', 0, []];
+    if (d.con) out[d.id] = { item: e[0], on: !!e[1] };
+    else { const it = ITEM_BY_NAME.get(e[0]); const allowed = new Set(allowedFor(it || null, d.id)); const imbs = (e[2] || []).filter(i => allowed.has(i)).slice(0, slotCount(it)); while (imbs.length < 3) imbs.push(''); out[d.id] = { item: e[0], on: !!e[1], imbs }; }
+  }
+  return out;
+}
 function defaultState() {
   return {
-    v: 1, char: 'Saturnsz', world: 'Tornabra', charInfo: '', tier: 'powerful', margin: 10, hours: 2, silver: 71000, goldtoken: 60000,
+    v: 2, char: 'Saturnsz', world: 'Tornabra', charInfo: '', tier: 'powerful', margin: 10, hours: 2, silver: 71000, goldtoken: 60000,
     priceMode: 'offer', market: null,
     prices: { ...DEFAULT_PRICES },
+    conPrices: JSON.parse(JSON.stringify(DEFAULT_CON_PRICES)),
+    conHours: {},
     slots: slotsFromPreset('saturnsz'),
-    cons: DEFAULT_CONS.map(c => ({ ...c })),
     savedAt: null,
   };
-}
-function slotsFromPreset(p) {
-  const pr = PRESETS[p];
-  return SLOT_DEFS.map(d => { const [name, on, imbs] = pr[d.id]; return { id: d.id, name, on: !!on, imbs: [imbs[0] || '', imbs[1] || '', imbs[2] || ''] }; });
 }
 
 // ---------- numbers ----------
@@ -497,6 +606,7 @@ function parseGold(s) {
 function parseNum(s) { const v = parseFloat(String(s).replace(',', '.')); return isFinite(v) ? v : 0; }
 const fmtDate = t => new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtDateTime = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const fmtHours = h => h >= 1 ? (Number.isInteger(h) ? h + ' h' : h.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' h') : Math.round(h * 60) + ' min';
 
 // ---------- state ----------
 let S = defaultState();
@@ -506,6 +616,10 @@ function normalize(x) {
   const s = { ...d, ...x };
   s.prices = { ...d.prices, ...(x.prices || {}) };
   for (const k in s.prices) s.prices[k] = Math.max(0, parseNum(s.prices[k]));
+  s.conPrices = { ...d.conPrices };
+  for (const k in (x.conPrices || {})) { const c = x.conPrices[k] || {}; if (typeof k === 'string' && k.length <= 50) s.conPrices[k] = { price: Math.max(0, parseNum(c.price)), cur: ['gold', 'silver', 'goldtoken'].includes(c.cur) ? c.cur : 'gold' }; }
+  s.conHours = {};
+  for (const k in (x.conHours || {})) { const h = parseNum(x.conHours[k]); if (h > 0 && k.length <= 50) s.conHours[k] = Math.min(100, h); }
   if (!FEES[s.tier]) s.tier = 'powerful';
   if (!['offer', 'day', 'month'].includes(s.priceMode)) s.priceMode = 'offer';
   s.char = String(s.char ?? '').slice(0, 40); s.world = String(s.world ?? '').slice(0, 30); s.charInfo = String(s.charInfo ?? '').slice(0, 80);
@@ -513,18 +627,27 @@ function normalize(x) {
   s.margin = Math.min(100, Math.max(0, parseNum(s.margin)));
   s.hours = Math.max(0.5, parseNum(s.hours) || 2);
   s.silver = Math.max(0, parseNum(s.silver)); s.goldtoken = Math.max(0, parseNum(s.goldtoken));
-  s.slots = SLOT_DEFS.map(def => {
-    const got = (Array.isArray(x.slots) ? x.slots : []).find(z => z && z.id === def.id) || d.slots.find(z => z.id === def.id);
-    const imbs = Array.isArray(got.imbs) ? got.imbs.slice(0, 3) : [];
-    while (imbs.length < 3) imbs.push('');
-    return { id: def.id, name: String(got.name ?? def.label).slice(0, 40), on: !!got.on, imbs: imbs.map(i => IMB_BY_ID[i] ? i : '') };
-  });
-  s.cons = (Array.isArray(x.cons) ? x.cons : d.cons).slice(0, 20).map(c => ({
-    name: String(c.name ?? 'Item').slice(0, 40), sprite: String(c.sprite || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 60),
-    price: Math.max(0, parseNum(c.price)), cur: ['gold', 'silver', 'goldtoken'].includes(c.cur) ? c.cur : 'gold',
-    hours: Math.max(0.05, parseNum(c.hours) || 1), on: !!c.on,
-  }));
+  const xs = (x.slots && typeof x.slots === 'object' && !Array.isArray(x.slots)) ? x.slots : {};
+  s.slots = {};
+  for (const def of SLOT_DEFS) {
+    if (def.na) continue;
+    const got = xs[def.id] || d.slots[def.id];
+    const item = String(got.item ?? '').slice(0, 50);
+    if (def.con) s.slots[def.id] = { item, on: !!got.on };
+    else {
+      const it = ITEM_BY_NAME.get(item) || null; const allowed = new Set(allowedFor(it, def.id));
+      const imbs = (Array.isArray(got.imbs) ? got.imbs : []).map(i => IMB_BY_ID[i] && allowed.has(i) ? i : '').slice(0, 3);
+      while (imbs.length < 3) imbs.push('');
+      s.slots[def.id] = { item, on: !!got.on, imbs };
+    }
+  }
   return s;
+}
+function migrateV1(old) {
+  const s = defaultState();
+  for (const k of ['char', 'world', 'charInfo', 'tier', 'margin', 'hours', 'silver', 'goldtoken', 'priceMode', 'market']) if (old[k] != null) s[k] = old[k];
+  s.prices = { ...s.prices, ...(old.prices || {}) };
+  return normalize(s);
 }
 function save() {
   S.savedAt = Date.now();
@@ -534,6 +657,7 @@ function save() {
 }
 function load() {
   try { const raw = localStorage.getItem(STORE_KEY); if (raw) return normalize(JSON.parse(raw)); } catch (e) {}
+  try { const raw = localStorage.getItem(OLD_KEY); if (raw) return migrateV1(JSON.parse(raw)); } catch (e) {}
   return defaultState();
 }
 
@@ -565,7 +689,8 @@ async function decodeState(code) {
     const ds = new DecompressionStream('gzip');
     bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer());
   }
-  return normalize(JSON.parse(new TextDecoder().decode(bytes)));
+  const obj = JSON.parse(new TextDecoder().decode(bytes));
+  return obj && obj.v === 1 ? migrateV1(obj) : normalize(obj);
 }
 function shareBase() { return location.origin + location.pathname; }
 
@@ -580,15 +705,26 @@ function imbCalc(imb) {
   const hour = apply / HOURS * (1 + S.margin / 100);
   return { items, fee, apply, hour, missing };
 }
+function slotItem(id) { return ITEM_BY_NAME.get(S.slots[id].item) || null; }
+function slotImbs(id) { const sl = S.slots[id]; const it = slotItem(id); return sl.imbs.slice(0, slotCount(it)).filter(i => i && IMB_BY_ID[i]); }
 function activeImbs() {
   const out = [];
-  for (const sl of S.slots) if (sl.on) for (const id of sl.imbs) if (id && IMB_BY_ID[id]) out.push({ slot: sl, imb: IMB_BY_ID[id] });
+  for (const d of SLOT_DEFS) { if (d.na || d.con) continue; const sl = S.slots[d.id]; if (!sl.on || !sl.item) continue; for (const id of slotImbs(d.id)) out.push({ slotId: d.id, slot: sl, imb: IMB_BY_ID[id] }); }
   return out;
 }
-function conGold(c) { return c.price * (c.cur === 'silver' ? S.silver : c.cur === 'goldtoken' ? S.goldtoken : 1); }
-function conHour(c) { return conGold(c) / c.hours; }
+function conInfo(name) { return CON_BY_NAME.get(name) || null; }
+function conPrice(name) { return S.conPrices[name] || { price: 0, cur: 'gold' }; }
+function conHours(name) { return S.conHours[name] || (conInfo(name) || {}).h || 1; }
+function conGold(name) { const p = conPrice(name); return p.price * (p.cur === 'silver' ? S.silver : p.cur === 'goldtoken' ? S.goldtoken : 1); }
+function conHour(name) { return name ? conGold(name) / conHours(name) : 0; }
+function slotHour(id) {
+  const d = SLOT_BY_ID[id], sl = S.slots[id];
+  if (!sl || !sl.on || !sl.item) return 0;
+  if (d.con) return conHour(sl.item);
+  return slotImbs(id).reduce((a, i) => a + imbCalc(IMB_BY_ID[i]).hour, 0);
+}
 
-// ---------- rendering ----------
+// ---------- rendering helpers ----------
 const $ = id => document.getElementById(id);
 function el(tag, attrs, ...kids) {
   const e = document.createElement(tag);
@@ -596,9 +732,13 @@ function el(tag, attrs, ...kids) {
   for (const k of kids) if (k != null) e.append(k);
   return e;
 }
-function tile(sprite, alt) {
-  const t = el('span', { class: 'tile' + (sprite ? '' : ' empty') });
-  if (sprite) { const img = el('img', { src: sprite.startsWith('sprites/') ? sprite : 'sprites/' + sprite + '.gif', alt: alt || '' }); img.addEventListener('error', () => { img.remove(); t.classList.add('empty'); }); t.append(img); }
+function spriteImg(file, alt, size) {
+  const img = el('img', { class: 'sprite', src: file.startsWith('sprites/') ? file : 'sprites/' + file, alt: alt || '', width: size || 32, height: size || 32 });
+  return img;
+}
+function tile(file, alt) {
+  const t = el('span', { class: 'tile' + (file ? '' : ' empty') });
+  if (file) { const img = spriteImg(file, alt); img.addEventListener('error', () => { img.remove(); t.classList.add('empty'); }); t.append(img); }
   return t;
 }
 function goldInput(id, value, onchange, extra) {
@@ -611,68 +751,187 @@ function goldInput(id, value, onchange, extra) {
   return inp;
 }
 function setGoldInput(id, value) { const inp = $(id); if (!inp) return; if (document.activeElement === inp) return; inp.value = value ? fmt(value) : ''; inp.classList.toggle('empty', !value); }
-function imbOptions(selected) {
+function imbOptions(selected, allowed) {
   const sel = el('select');
   sel.append(el('option', { value: '' }, '— nenhum'));
+  const set = new Set(allowed); const n = TIER_ITEMS[S.tier];
   for (const c in CATS) {
+    const list = IMBS.filter(i => i.cat === c && set.has(i.id));
+    if (!list.length) continue;
     const g = el('optgroup', { label: CATS[c] });
-    for (const i of IMBS) if (i.cat === c) g.append(el('option', { value: i.id }, i.name + ' · ' + i.effect));
+    for (const i of list) g.append(el('option', { value: i.id }, `${i.name} · ${i.effect} ${i.vals[n - 1]}`));
     sel.append(g);
   }
-  sel.value = selected || '';
-  sel.classList.toggle('chosen', !!selected);
+  sel.value = set.has(selected) ? selected : '';
+  sel.classList.toggle('chosen', !!sel.value);
   return sel;
 }
+const vocLabel = v => v ? v : 'todas';
+function itemMeta(it) { return `${KIND_LABEL[it.k] || it.k} · ${it.s} slot${it.s > 1 ? 's' : ''} · lvl ${it.l || '—'} · ${vocLabel(it.v)}`; }
+function charVoc() { const m = /(Knight|Paladin|Sorcerer|Druid|Monk)/i.exec(S.charInfo || ''); return m ? { knight: 'EK', paladin: 'RP', sorcerer: 'MS', druid: 'ED', monk: 'MK' }[m[1].toLowerCase()] : ''; }
 
-function buildSet() {
-  const root = $('slots'); root.replaceChildren();
-  for (const def of SLOT_DEFS) {
-    const sl = S.slots.find(z => z.id === def.id);
-    const row = el('div', { class: 'slot' + (sl.on ? '' : ' off'), id: 'slot-' + def.id });
-    const sw = el('label', { class: 'switch' }, el('input', { type: 'checkbox', id: 'slot-on-' + def.id, 'aria-label': 'Usar ' + def.label }), el('span'));
-    sw.firstChild.checked = sl.on;
-    sw.firstChild.addEventListener('change', e => { sl.on = e.target.checked; row.classList.toggle('off', !sl.on); update(); });
-    const name = el('input', { class: 'slot-name', id: 'slot-name-' + def.id, type: 'text', maxlength: '40', 'aria-label': 'Nome do item em ' + def.label });
-    name.value = sl.name;
-    name.addEventListener('input', () => { sl.name = name.value; update(); });
-    const imbs = el('div', { class: 'slot-imbs' });
-    sl.imbs.forEach((id, i) => {
-      const sel = imbOptions(id); sel.id = `slot-imb-${def.id}-${i}`; sel.setAttribute('aria-label', `Imbuimento ${i + 1} em ${def.label}`);
-      sel.addEventListener('change', () => { sl.imbs[i] = sel.value; sel.classList.toggle('chosen', !!sel.value); update(); });
-      imbs.append(sel);
-    });
-    row.append(sw, tile(def.sprite, def.label), el('div', { class: 'slot-main' }, el('span', { class: 'eyebrow' }, def.label), name), imbs,
-      el('div', { class: 'slot-cost mono' }, el('span', { 'data-slotcost': def.id }, '0'), el('span', { class: 'per' }, 'gp/h')));
-    root.append(row);
+// ---------- inventory ----------
+let selSlot = 'weapon';
+function buildInv() {
+  const root = $('inv'); root.replaceChildren();
+  for (const d of SLOT_DEFS) {
+    const c = el('button', { type: 'button', class: 'cell' + (d.na ? ' na' : ''), id: 'cell-' + d.id, style: 'grid-area:' + d.id, 'aria-label': d.label });
+    c.append(el('span', { class: 'lbl' }, d.label));
+    if (!d.na) { c.append(el('span', { class: 'cost mono', 'data-cellcost': d.id }, '')); c.addEventListener('click', () => { if (selSlot === d.id) openPicker(d.id); else { selSlot = d.id; renderInv(); renderDetail(); } }); }
+    else c.addEventListener('click', () => { selSlot = d.id; renderInv(); renderDetail(); });
+    c.append(el('span', { class: 'art', 'data-art': d.id }), el('span', { class: 'nm', 'data-nm': d.id }, ''));
+    root.append(c);
   }
 }
-
-function buildCons() {
-  const root = $('cons'); root.replaceChildren();
-  S.cons.forEach((c, idx) => {
-    const row = el('div', { class: 'con' + (c.on ? '' : ' off') });
-    const sw = el('label', { class: 'switch' }, el('input', { type: 'checkbox', id: 'con-on-' + idx, 'aria-label': 'Usar ' + c.name }), el('span'));
-    sw.firstChild.checked = c.on;
-    sw.firstChild.addEventListener('change', e => { c.on = e.target.checked; row.classList.toggle('off', !c.on); update(); });
-    const name = el('input', { class: 'name', id: 'con-name-' + idx, type: 'text', maxlength: '40', 'aria-label': 'Nome do consumível' }); name.value = c.name;
-    name.addEventListener('input', () => { c.name = name.value; update(); });
-    const price = goldInput('con-price-' + idx, c.price, v => { c.price = v; update(); });
-    const cur = el('select', { id: 'con-cur-' + idx, 'aria-label': 'Moeda' }, el('option', { value: 'gold' }, 'gp'), el('option', { value: 'silver' }, 'Silver Token'), el('option', { value: 'goldtoken' }, 'Gold Token'));
-    cur.value = c.cur; cur.addEventListener('change', () => { c.cur = cur.value; update(); });
-    const hrs = el('input', { class: 'hrs', id: 'con-hrs-' + idx, type: 'number', min: '0.05', step: '0.25', 'aria-label': 'Duração em horas' }); hrs.value = c.hours;
-    hrs.addEventListener('input', () => { c.hours = Math.max(0.05, parseNum(hrs.value) || 0.05); update(); });
-    const del = el('button', { class: 'icon-btn', type: 'button', title: 'Remover', 'aria-label': 'Remover ' + c.name, onclick: () => { S.cons.splice(idx, 1); buildCons(); update(); } }, '×');
-    row.append(sw, tile(c.sprite, c.name),
-      el('div', { class: 'f name-f' }, el('span', { class: 'eyebrow' }, 'Item'), name),
-      el('div', { class: 'f price-f' }, el('span', { class: 'eyebrow' }, 'Preço unitário'), price),
-      el('div', { class: 'f cur-f' }, el('span', { class: 'eyebrow' }, 'Moeda'), cur),
-      el('div', { class: 'f hrs-f' }, el('span', { class: 'eyebrow' }, 'Dura (h)'), hrs),
-      el('div', { class: 'cost mono' }, el('span', { 'data-concost': idx }, '0'), el('span', { class: 'per' }, 'gp/h')), del);
-    root.append(row);
-  });
-  if (!S.cons.length) root.append(el('p', { class: 'muted' }, 'Nenhum consumível. Adicione anéis, amuletos ou o que acabar durante a hunt.'));
+function renderInv() {
+  for (const d of SLOT_DEFS) {
+    const c = $('cell-' + d.id); c.classList.toggle('sel', selSlot === d.id);
+    const art = c.querySelector('[data-art]'); art.replaceChildren();
+    const nm = c.querySelector('[data-nm]');
+    if (d.na) { art.append(el('span', { class: 'ph' }, '')); nm.textContent = 'sem imbui'; c.classList.add('off'); continue; }
+    const sl = S.slots[d.id];
+    const file = d.con ? (conInfo(sl.item) || {}).f : (slotItem(d.id) || {}).f;
+    if (sl.item) { if (file) { const img = spriteImg(file, sl.item, 56); img.addEventListener('error', () => { img.replaceWith(el('span', { class: 'ph' }, '?')); }); art.append(img); } else art.append(el('span', { class: 'ph' }, '?')); nm.textContent = sl.item; }
+    else { art.append(el('span', { class: 'ph' }, '+')); nm.textContent = 'vazio'; }
+    c.classList.toggle('off', !sl.on || !sl.item);
+    const h = slotHour(d.id); c.querySelector('[data-cellcost]').textContent = sl.item && sl.on ? fmtK(h) : '';
+  }
+  let total = 0; for (const d of SLOT_DEFS) if (!d.na) total += slotHour(d.id);
+  $('inv-total').textContent = fmt(total) + ' gp/h';
+}
+function renderDetail() {
+  const root = $('detail'); root.replaceChildren();
+  const d = SLOT_BY_ID[selSlot];
+  if (d.na) {
+    root.append(el('div', { class: 'head' }, el('span', { class: 'big-tile empty' }), el('div', { class: 't' }, el('h3', {}, d.label), el('span', { class: 'meta' }, 'Não recebe imbuimento'))),
+      el('p', { class: 'note' }, d.id === 'legs' ? 'Calças não podem ser imbuídas no Tibia. O slot está aqui só para o inventário ficar igual ao do jogo.' : 'Quivers e munição não recebem imbuimento. Para paladinos, os imbuimentos ficam no bow ou crossbow.'));
+    return;
+  }
+  const sl = S.slots[d.id];
+  const head = el('div', { class: 'head' });
+  const bigTile = el('span', { class: 'big-tile' + (sl.item ? '' : ' empty') });
+  const t = el('div', { class: 't' });
+  const actions = el('div', { class: 'actions' });
+  const sw = el('label', { class: 'sw-lbl' }, el('span', { class: 'switch' }, el('input', { type: 'checkbox', id: 'slot-on-' + d.id }), el('span')), el('span', {}, sl.on ? 'Em uso' : 'Fora do set'));
+  sw.querySelector('input').checked = sl.on;
+  sw.querySelector('input').addEventListener('change', e => { sl.on = e.target.checked; sw.lastChild.textContent = sl.on ? 'Em uso' : 'Fora do set'; update(); });
+  actions.append(el('button', { type: 'button', class: 'btn sm primary', onclick: () => openPicker(d.id) }, sl.item ? 'Trocar item' : 'Escolher item'), sw);
+  if (sl.item) actions.append(el('button', { type: 'button', class: 'btn sm ghost', onclick: () => { sl.item = ''; if (!d.con) sl.imbs = ['', '', '']; update(); renderDetail(); } }, 'Esvaziar'));
+  if (d.con) {
+    const ci = conInfo(sl.item);
+    if (sl.item && ci && ci.f) bigTile.append(spriteImg(ci.f, sl.item, 64));
+    t.append(el('h3', {}, sl.item || d.label), el('span', { class: 'meta' }, sl.item ? (ci ? `${d.label} · dura ${fmtHours(ci.h)} · lvl ${ci.l || '—'} · ${vocLabel(ci.v)}` : `${d.label} · item fora da lista`) : 'Nenhum item escolhido'));
+    if (ci && ci.a) t.append(el('span', { class: 'meta' }, ci.a));
+    head.append(bigTile, t); root.append(head, actions);
+    if (!sl.item) { root.append(el('p', { class: 'note empty' }, 'Escolha o anel ou amuleto que você usa na hunt. O custo entra como preço dividido pelo tempo que dura.')); return; }
+    const p = conPrice(sl.item);
+    const fields = el('div', { class: 'fields' });
+    const price = goldInput('con-price-' + d.id, p.price, v => { S.conPrices[sl.item] = { ...conPrice(sl.item), price: v }; update(); }, { 'aria-label': 'Preço' });
+    const cur = el('select', { id: 'con-cur-' + d.id }, el('option', { value: 'gold' }, 'gp'), el('option', { value: 'silver' }, 'Silver Token'), el('option', { value: 'goldtoken' }, 'Gold Token'));
+    cur.value = p.cur; cur.addEventListener('change', () => { S.conPrices[sl.item] = { ...conPrice(sl.item), cur: cur.value }; update(); });
+    const hrs = el('input', { class: 'hrs', id: 'con-hrs-' + d.id, type: 'number', min: '0.05', step: '0.25' }); hrs.value = conHours(sl.item);
+    hrs.addEventListener('input', () => { const h = parseNum(hrs.value); if (h > 0) { S.conHours[sl.item] = h; update(); } });
+    fields.append(el('label', {}, 'Preço por carga', price), el('label', {}, 'Moeda', cur), el('label', {}, 'Dura (horas)', hrs));
+    root.append(fields);
+    root.append(el('div', { class: 'cost-line' }, el('span', {}, `${fmt(conGold(sl.item))} gp a cada ${fmtHours(conHours(sl.item))}`), el('span', { class: 'v', 'data-detailcost': d.id }, fmt(conHour(sl.item)) + ' gp/h')));
+    if (p.cur !== 'gold') root.append(el('p', { class: 'note' }, 'Recarga paga em tokens: o custo usa o preço do token informado no topo.'));
+    return;
+  }
+  const it = slotItem(d.id);
+  if (sl.item && it && it.f) bigTile.append(spriteImg(it.f, sl.item, 64));
+  t.append(el('h3', {}, sl.item || d.label), el('span', { class: 'meta' }, sl.item ? (it ? itemMeta(it) : `${d.label} · item fora da lista da wiki, até 3 slots`) : 'Nenhum item escolhido'));
+  if (it && it.a) t.append(el('span', { class: 'meta' }, it.a));
+  head.append(bigTile, t); root.append(head, actions);
+  if (!sl.item) { root.append(el('p', { class: 'note empty' }, 'Escolha o item que você usa neste slot. A lista traz só itens imbuíveis.')); return; }
+  const allowed = allowedFor(it, d.id); const n = slotCount(it);
+  const imbs = el('div', { class: 'imbs' });
+  for (let i = 0; i < n; i++) {
+    const sel = imbOptions(sl.imbs[i], allowed); sel.id = `slot-imb-${d.id}-${i}`;
+    const c = el('span', { class: 'c mono', 'data-imbcost': `${d.id}:${i}` }, '');
+    sel.addEventListener('change', () => { sl.imbs[i] = sel.value; sel.classList.toggle('chosen', !!sel.value); update(); });
+    imbs.append(el('div', { class: 'imb-row' }, el('span', { class: 'n' }, 'Slot ' + (i + 1)), sel, c));
+  }
+  root.append(el('span', { class: 'eyebrow' }, `Imbuimentos (${n} slot${n > 1 ? 's' : ''} no item)`), imbs);
+  if (!allowed.length) root.append(el('p', { class: 'note' }, 'Nenhum imbuimento conhecido para este item.'));
+  root.append(el('div', { class: 'cost-line' }, el('span', {}, 'Este item por hora de hunt'), el('span', { class: 'v', 'data-detailcost': d.id }, '')));
+  updateDetailCosts();
+}
+function updateDetailCosts() {
+  const d = SLOT_BY_ID[selSlot]; if (!d || d.na) return;
+  const sl = S.slots[d.id];
+  const v = $('detail').querySelector('[data-detailcost]'); if (v) v.textContent = fmt(slotHour(d.id)) + ' gp/h';
+  if (!d.con) sl.imbs.forEach((id, i) => { const c = $('detail').querySelector(`[data-imbcost="${d.id}:${i}"]`); if (c) c.textContent = id && IMB_BY_ID[id] ? fmt(imbCalc(IMB_BY_ID[id]).hour) + ' gp/h' : ''; });
 }
 
+// ---------- picker ----------
+let pk = { slot: null, rows: [], voc: 'all', kind: 'all' };
+function openPicker(slotId) {
+  const d = SLOT_BY_ID[slotId]; if (!d || d.na) return;
+  pk.slot = slotId; pk.kind = 'all';
+  pk.voc = charVoc() || 'all';
+  $('pk-title').textContent = (d.con ? 'Escolher ' : 'Escolher item: ') + d.label;
+  const search = $('pk-search'); search.value = ''; search.placeholder = d.con ? 'Pesquisar anel ou amuleto…' : 'Pesquisar item (ex.: falcon, soul, gnome)…';
+  buildPickerFilters();
+  buildPickerRows();
+  const dlg = $('picker');
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); }
+  setTimeout(() => search.focus(), 30);
+}
+function closePicker() { const dlg = $('picker'); try { dlg.close(); } catch (e) { dlg.removeAttribute('open'); } }
+function buildPickerFilters() {
+  const d = SLOT_BY_ID[pk.slot]; const f = $('pk-filters'); f.replaceChildren();
+  const vocs = [['all', 'Todas voc.'], ['EK', 'EK'], ['RP', 'RP'], ['MS', 'MS'], ['ED', 'ED'], ['MK', 'MK']];
+  for (const [v, lbl] of vocs) f.append(el('button', { type: 'button', class: 'chip', 'data-voc': v, 'aria-pressed': String(pk.voc === v), onclick: () => { pk.voc = v; buildPickerFilters(); filterPicker(); } }, lbl));
+  if (!d.con && d.kinds.length > 1) {
+    f.append(el('span', { style: 'width:100%' }));
+    for (const k of ['all', ...d.kinds]) f.append(el('button', { type: 'button', class: 'chip', 'data-kind': k, 'aria-pressed': String(pk.kind === k), onclick: () => { pk.kind = k; buildPickerFilters(); filterPicker(); } }, k === 'all' ? 'Todos os tipos' : KIND_LABEL[k]));
+  }
+}
+function buildPickerRows() {
+  const d = SLOT_BY_ID[pk.slot]; const list = $('pk-list'); list.replaceChildren(); pk.rows = [];
+  const current = S.slots[pk.slot].item;
+  const source = d.con ? CONS.filter(c => c.slot === pk.slot) : ITEMS.filter(i => d.kinds.includes(i.k));
+  for (const it of source) {
+    const row = el('button', { type: 'button', class: 'pk-row' + (it.n === current ? ' cur' : '') });
+    row.append(tile(it.f, it.n), el('span', { style: 'min-width:0;display:flex;flex-direction:column' }, el('span', { class: 'nm' }, it.n), el('span', { class: 'meta' }, d.con ? `dura ${fmtHours(it.h)} · lvl ${it.l || '—'} · ${vocLabel(it.v)}${it.a ? ' · ' + it.a : ''}` : `${KIND_LABEL[it.k]} · lvl ${it.l || '—'} · ${vocLabel(it.v)}${it.a ? ' · ' + it.a : ''}`)),
+      el('span', { class: 'right' }, d.con ? '' : el('span', { html: `<b>${it.s}</b> slot${it.s > 1 ? 's' : ''}` })));
+    row.addEventListener('click', () => chooseItem(it.n));
+    row._it = it; row._q = (it.n + ' ' + (it.a || '')).toLowerCase();
+    list.append(row); pk.rows.push(row);
+  }
+  const custom = el('button', { type: 'button', class: 'pk-row custom', id: 'pk-custom' });
+  custom.append(tile('', ''), el('span', { style: 'min-width:0;display:flex;flex-direction:column' }, el('span', { class: 'nm', id: 'pk-custom-nm' }, 'Usar o nome digitado'), el('span', { class: 'meta' }, 'Item fora da lista: entra sem sprite, com até 3 slots e as regras gerais do slot')), el('span', { class: 'right' }));
+  custom.addEventListener('click', () => { const q = $('pk-search').value.trim(); if (q) chooseItem(q); });
+  list.append(custom);
+  list.append(el('p', { class: 'pk-empty', id: 'pk-empty' }, 'Nada encontrado com esses filtros.'));
+  filterPicker();
+}
+function filterPicker() {
+  const q = $('pk-search').value.trim().toLowerCase(); const d = SLOT_BY_ID[pk.slot];
+  let shown = 0, first = null;
+  for (const row of pk.rows) {
+    const it = row._it;
+    const okV = pk.voc === 'all' || !it.v || it.v.split('/').includes(pk.voc);
+    const okK = d.con || pk.kind === 'all' || it.k === pk.kind;
+    const okQ = !q || row._q.includes(q);
+    const ok = okV && okK && okQ; row.hidden = !ok; row.classList.remove('hl');
+    if (ok) { shown++; if (!first) first = row; }
+  }
+  if (first) first.classList.add('hl');
+  const custom = $('pk-custom'); custom.hidden = !q || pk.rows.some(r => !r.hidden && r._it.n.toLowerCase() === q);
+  $('pk-custom-nm').textContent = q ? `Usar "${$('pk-search').value.trim()}"` : 'Usar o nome digitado';
+  $('pk-empty').hidden = shown > 0 || !!q;
+  $('pk-count').textContent = `${shown} ${d.con ? 'opções' : 'itens'}${pk.voc !== 'all' ? ' · vocação ' + pk.voc : ''}`;
+}
+function chooseItem(name) {
+  const d = SLOT_BY_ID[pk.slot]; const sl = S.slots[pk.slot];
+  sl.item = name; sl.on = true;
+  if (!d.con) { const it = ITEM_BY_NAME.get(name) || null; const allowed = new Set(allowedFor(it, pk.slot)); sl.imbs = sl.imbs.map(i => allowed.has(i) ? i : ''); if (!sl.imbs.some(Boolean)) { const guess = allowed.has('vampirism') ? 'vampirism' : allowed.has('void') ? 'void' : allowed.has('swiftness') ? 'swiftness' : allowed.has('featherweight') ? 'featherweight' : ''; if (guess) sl.imbs[0] = guess; } }
+  closePicker(); update(); renderDetail();
+  toast(`${d.label}: ${name}`);
+}
+
+// ---------- price book ----------
 let activeCat = 'all';
 function buildGrid() {
   const root = $('grid'); root.replaceChildren();
@@ -707,7 +966,6 @@ function applyCatFilter() {
   }
   document.querySelectorAll('#cats .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === activeCat)));
 }
-
 function updateGrid() {
   const used = new Map();
   for (const a of activeImbs()) used.set(a.imb.id, (used.get(a.imb.id) || 0) + 1);
@@ -732,17 +990,16 @@ function updateGrid() {
   }
 }
 
+// ---------- summary & shopping ----------
 function updateSummary() {
   const act = activeImbs();
-  let imbHour = 0, applyTotal = 0, missingItems = new Set(), perSlot = {};
-  for (const { slot, imb } of act) {
-    const c = imbCalc(imb);
-    imbHour += c.hour; applyTotal += c.apply;
-    perSlot[slot.id] = (perSlot[slot.id] || 0) + c.hour;
+  let imbHour = 0, applyTotal = 0, missingItems = new Set();
+  for (const { imb } of act) {
+    const c = imbCalc(imb); imbHour += c.hour; applyTotal += c.apply;
     for (const [n] of tierItems(imb)) if (!priceOf(n)) missingItems.add(n);
   }
-  let conHourTotal = 0, perCon = [];
-  S.cons.forEach((c, i) => { const h = c.on ? conHour(c) : 0; conHourTotal += h; perCon.push(h); const o = $('cons').querySelector(`[data-concost="${i}"]`); if (o) o.textContent = fmt(conHour(c)); });
+  let conHourTotal = 0;
+  for (const d of SLOT_DEFS) if (d.con) { const sl = S.slots[d.id]; if (sl.on && sl.item) { conHourTotal += conHour(sl.item); if (!conPrice(sl.item).price) missingItems.add(sl.item); } }
   const total = imbHour + conHourTotal;
   $('hour-total').textContent = fmt(total);
   $('hour-total-k').textContent = fmtK(total) + ' gp';
@@ -753,18 +1010,15 @@ function updateSummary() {
   $('cycle-total').textContent = fmt(applyTotal * (1 + S.margin / 100) + conHourTotal * HOURS) + ' gp';
   const mc = $('missing-count'); mc.textContent = missingItems.size; mc.classList.toggle('warn', missingItems.size > 0); mc.classList.toggle('good', missingItems.size === 0 && act.length > 0);
   $('missing-hint').textContent = missingItems.size ? [...missingItems].slice(0, 4).join(', ') + (missingItems.size > 4 ? '…' : '') : (act.length ? 'todos os itens do set têm preço' : 'nenhum imbuimento ativo');
-  for (const sl of S.slots) $('slots').querySelector(`[data-slotcost="${sl.id}"]`).textContent = fmt(sl.on ? perSlot[sl.id] || 0 : 0);
   const rows = [];
-  for (const sl of S.slots) if (sl.on && perSlot[sl.id]) rows.push([sl.name || SLOT_DEFS.find(d => d.id === sl.id).label, perSlot[sl.id]]);
-  S.cons.forEach((c, i) => { if (c.on && perCon[i]) rows.push([c.name, perCon[i]]); });
+  for (const d of SLOT_DEFS) { if (d.na) continue; const sl = S.slots[d.id]; const h = slotHour(d.id); if (sl.on && sl.item && h) rows.push([sl.item, h]); }
   rows.sort((a, b) => b[1] - a[1]);
   const bars = $('bars'); bars.replaceChildren();
   const max = rows.length ? rows[0][1] : 1;
-  if (!rows.length) bars.append(el('p', { class: 'bars-empty' }, 'Ligue um slot do set para ver a divisão do custo.'));
+  if (!rows.length) bars.append(el('p', { class: 'bars-empty' }, 'Escolha um item no inventário para ver a divisão do custo.'));
   for (const [lbl, v] of rows) bars.append(el('div', { class: 'bar' }, el('span', { class: 'lbl', title: lbl }, lbl), el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${Math.max(1, v / max * 100)}%` })), el('span', { class: 'val mono' }, fmt(v))));
   $('fee-view').textContent = fmt(FEES[S.tier]) + ' gp';
 }
-
 function updateShopping() {
   const act = activeImbs();
   const agg = new Map();
@@ -778,7 +1032,7 @@ function updateShopping() {
   const list = [...agg.values()].sort((a, b) => (priceOf(b.name) * b.qty) - (priceOf(a.name) * a.qty));
   for (const a of list) {
     const p = priceOf(a.name); const sub = p * a.qty; total += sub; if (!p) missing++;
-    body.append(el('tr', {}, el('td', {}, el('div', { class: 'cell' }, tile(spriteOf(a.name), a.name), el('span', {}, a.name))),
+    body.append(el('tr', {}, el('td', {}, el('div', { class: 'cell-row' }, tile(spriteOf(a.name), a.name), el('span', {}, a.name))),
       el('td', { class: 'for' }, [...a.for].join(', ')), el('td', { class: 'num' }, a.qty + '×'), el('td', { class: 'num' }, p ? fmt(p) : el('span', { class: 'muted' }, 'sem preço')), el('td', { class: 'num' }, fmt(sub))));
   }
   const fees = FEES[S.tier] * act.length;
@@ -786,21 +1040,19 @@ function updateShopping() {
   foot.append(el('tr', {}, el('td', { colspan: '4' }, `Taxas · ${act.length} × ${fmt(FEES[S.tier])} (${TIER_LABEL[S.tier]})`), el('td', { class: 'num' }, fmt(fees))));
   foot.append(el('tr', {}, el('td', { colspan: '4' }, 'Total para imbuir o set'), el('td', { class: 'num' }, fmt(total + fees) + ' gp')));
 }
-
 function updateMarketStatus(err) {
   const st = $('market-status'); st.classList.toggle('err', !!err);
   if (err) { st.textContent = err; return; }
   const m = S.market;
-  if (!m || !m.count) { st.textContent = 'Preenche todos os itens e os tokens com o market do mundo acima, via TibiaMarket.'; return; }
+  if (!m || !m.count) { st.textContent = 'Preenche os itens de imbuimento, os tokens e os anéis e amuletos com o market do mundo acima, via TibiaMarket.'; return; }
   st.replaceChildren(el('b', {}, m.count + ' preços de ' + m.world), ' · scan do market em ', el('b', {}, fmtDate(m.scannedAt)), ' · puxado em ' + fmtDateTime(m.fetchedAt) + (m.mode ? ' · ' + ({ offer: 'menor oferta de venda', day: 'média do dia', month: 'média do mês' })[m.mode] : ''));
 }
 
 let updTimer = null;
 function update() {
-  updateGrid(); updateSummary(); updateShopping(); applyCatFilter();
+  updateGrid(); updateSummary(); updateShopping(); applyCatFilter(); renderInv(); updateDetailCosts();
   clearTimeout(updTimer); updTimer = setTimeout(save, 250);
 }
-
 function syncHeader() {
   $('char').value = S.char; $('world').value = S.world; $('margin').value = S.margin; $('hours').value = S.hours;
   $('char-info').textContent = S.charInfo || '';
@@ -810,7 +1062,7 @@ function syncHeader() {
   document.querySelectorAll('#presets .chip').forEach(b => b.setAttribute('aria-pressed', 'false'));
   updateMarketStatus();
 }
-function rebuildAll() { syncHeader(); buildSet(); buildCons(); buildGrid(); update(); }
+function rebuildAll() { syncHeader(); buildInv(); buildGrid(); update(); renderDetail(); }
 
 // ---------- market (TibiaMarket) ----------
 function pickPrice(row) {
@@ -824,8 +1076,8 @@ async function pullMarket() {
   if (!world) { updateMarketStatus('Digite o mundo (ex.: Tornabra) antes de puxar os preços.'); $('world').focus(); return; }
   btn.disabled = true; btn.textContent = 'Consultando…'; updateMarketStatus();
   try {
-    const ids = Object.values(API_IDS).join(',');
-    const url = `${MARKET_API}/market_values?server=${encodeURIComponent(world)}&item_ids=${ids}&limit=200`;
+    const ids = [...Object.values(API_IDS), ...CON_ID_TO_NAME.keys()].join(',');
+    const url = `${MARKET_API}/market_values?server=${encodeURIComponent(world)}&item_ids=${ids}&limit=300`;
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (res.status === 429) throw new Error('O TibiaMarket aceita uma consulta a cada 5 segundos. Espere um pouco e tente de novo.');
     if (res.status === 422 || res.status === 404) throw new Error(`O TibiaMarket não reconheceu o mundo "${world}". Confira a grafia.`);
@@ -834,19 +1086,24 @@ async function pullMarket() {
     if (!Array.isArray(rows) || !rows.length) throw new Error(`Nenhum dado de market para "${world}".`);
     let count = 0, newest = 0; const missing = [];
     for (const row of rows) {
-      const key = ID_TO_KEY[row.id]; if (!key) continue;
       const p = pickPrice(row);
       if (row.time && row.time * 1000 > newest) newest = row.time * 1000;
-      if (!p) { missing.push(ITEM_NAMES[key] || key); continue; }
-      if (key === 'silver_token') { S.silver = p; setGoldInput('silver', p); }
-      else if (key === 'gold_token') { S.goldtoken = p; setGoldInput('goldtoken', p); }
-      else { S.prices[key] = p; setGoldInput('price-' + key, p); }
-      count++;
+      const key = ID_TO_KEY[row.id];
+      if (key) {
+        if (!p) { missing.push(ITEM_NAMES[key] || key); continue; }
+        if (key === 'silver_token') { S.silver = p; setGoldInput('silver', p); }
+        else if (key === 'gold_token') { S.goldtoken = p; setGoldInput('goldtoken', p); }
+        else { S.prices[key] = p; setGoldInput('price-' + key, p); }
+        count++;
+      } else if (CON_ID_TO_NAME.has(row.id)) {
+        const name = CON_ID_TO_NAME.get(row.id); const cur = conPrice(name);
+        if (p && cur.cur === 'gold') { S.conPrices[name] = { price: p, cur: 'gold' }; count++; }
+      }
     }
     const seen = new Set(rows.map(r => r.id));
     for (const [key, id] of Object.entries(API_IDS)) if (!seen.has(id) && key !== 'silver_token' && key !== 'gold_token') missing.push(ITEM_NAMES[key] || key);
     S.market = { world, scannedAt: newest || Date.now(), fetchedAt: Date.now(), count, mode: S.priceMode };
-    update(); updateMarketStatus();
+    update(); renderDetail(); updateMarketStatus();
     toast(`${count} preços atualizados de ${world} (scan de ${fmtDate(S.market.scannedAt)})` + (missing.length ? ` · sem dado: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}` : ''));
   } catch (e) {
     updateMarketStatus(e.message && !/fetch|network|Failed/i.test(e.message) ? e.message : 'Não foi possível consultar o TibiaMarket agora. Verifique a conexão ou tente mais tarde.');
@@ -902,15 +1159,20 @@ function wire() {
     inp.addEventListener('input', () => { const v = parseGold(inp.value); if (!isNaN(v)) { S[key] = v; update(); } });
     inp.addEventListener('blur', () => { inp.value = fmt(S[key]); });
   }
-  $('tier-seg').addEventListener('click', e => { const b = e.target.closest('button[data-tier]'); if (!b) return; S.tier = b.dataset.tier; syncHeader(); update(); });
+  $('tier-seg').addEventListener('click', e => { const b = e.target.closest('button[data-tier]'); if (!b) return; S.tier = b.dataset.tier; syncHeader(); update(); renderDetail(); });
   $('presets').addEventListener('click', e => {
     const b = e.target.closest('button[data-preset]'); if (!b) return;
-    S.slots = slotsFromPreset(b.dataset.preset); buildSet(); update();
+    S.slots = slotsFromPreset(b.dataset.preset); update(); renderDetail();
     document.querySelectorAll('#presets .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     toast('Preset aplicado: ' + b.textContent.trim());
   });
   $('cats').addEventListener('click', e => { const b = e.target.closest('button[data-cat]'); if (!b) return; activeCat = b.dataset.cat; applyCatFilter(); });
-  $('add-con').addEventListener('click', () => { S.cons.push({ name: 'Novo item', sprite: '', price: 0, cur: 'gold', hours: 1, on: true }); buildCons(); update(); const last = $('cons').querySelector(`#con-name-${S.cons.length - 1}`); if (last) { last.focus(); last.select(); } });
+  $('pk-close').addEventListener('click', closePicker);
+  $('picker').addEventListener('click', e => { if (e.target === $('picker')) closePicker(); });
+  $('pk-search').addEventListener('input', filterPicker);
+  $('pk-search').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); const first = pk.rows.find(r => !r.hidden); if (first) first.click(); else if (!$('pk-custom').hidden) $('pk-custom').click(); }
+  });
   $('reset').addEventListener('click', () => {
     const b = $('reset');
     if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'Confirmar: apagar meus preços e set?'; b.classList.add('primary'); setTimeout(() => { b.dataset.arm = ''; b.textContent = 'Restaurar padrão'; b.classList.remove('primary'); }, 4000); return; }
@@ -947,6 +1209,5 @@ async function init() {
 init();
 })();
 </script>
-<!--ARTIFACT-END-->
 </body>
 </html>
