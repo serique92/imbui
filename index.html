@@ -139,7 +139,7 @@ section{margin-top:40px}
 .cell img{width:56px;height:56px;image-rendering:pixelated;image-rendering:crisp-edges}
 .cell .ph{width:36px;height:36px;border:2px dashed var(--slot-line);border-radius:5px;display:grid;place-items:center;color:var(--fg-faint);font-size:22px;line-height:1}
 .cell .nm{font-size:11px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
-.cell .lbl{position:absolute;top:5px;left:7px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-faint);font-weight:600}
+.cell .lbl{position:absolute;top:5px;left:7px;max-width:58%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-faint);font-weight:600}
 .cell .cost{position:absolute;top:4px;right:6px;font-size:10.5px;color:var(--accent);font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .cell.sel{outline:2px solid var(--accent);outline-offset:1px}
 .cell.off .nm,.cell.off img{opacity:.4}
@@ -498,7 +498,7 @@ const SLOT_DEFS = [
   { id:'backpack', label:'Mochila', kinds:['backpack'] },
   { id:'weapon', label:'Arma', kinds:['rod','wand','bow','crossbow','axe','club','sword','fist'] },
   { id:'armor', label:'Armadura', kinds:['armor'] },
-  { id:'shield', label:'Escudo / Spellbook', kinds:['shield','spellbook'] },
+  { id:'shield', label:'Escudo / Spellbook', short:'Escudo', kinds:['shield','spellbook'] },
   { id:'ring', label:'Anel', con:true },
   { id:'legs', label:'Calça', na:true },
   { id:'quiver', label:'Quiver', na:true },
@@ -776,7 +776,7 @@ function buildInv() {
   const root = $('inv'); root.replaceChildren();
   for (const d of SLOT_DEFS) {
     const c = el('button', { type: 'button', class: 'cell' + (d.na ? ' na' : ''), id: 'cell-' + d.id, style: 'grid-area:' + d.id, 'aria-label': d.label });
-    c.append(el('span', { class: 'lbl' }, d.label));
+    c.append(el('span', { class: 'lbl' }, d.short || d.label));
     if (!d.na) { c.append(el('span', { class: 'cost mono', 'data-cellcost': d.id }, '')); c.addEventListener('click', () => { if (selSlot === d.id) openPicker(d.id); else { selSlot = d.id; renderInv(); renderDetail(); } }); }
     else c.addEventListener('click', () => { selSlot = d.id; renderInv(); renderDetail(); });
     c.append(el('span', { class: 'art', 'data-art': d.id }), el('span', { class: 'nm', 'data-nm': d.id }, ''));
