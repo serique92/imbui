@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Calculadora de custo por hora dos imbuimentos do Tibia, com preços de market por mundo.">
+<link rel="icon" href="sprites/Silver_Token.gif">
+<!--ARTIFACT-START-->
+<title>Imbui</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600;700&family=Grenze:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one scrolling control panel. Summary strip first, then the character's set, the price book (one card per imbuement) and the shopping list. Sprites sit in inventory-style tiles, numbers in mono. Dark-first, like the game client; parchment in light mode. */
+:root{
+  --bg:#15110e; --surface:#1e1815; --surface-2:#271f19; --surface-3:#2f261f;
+  --line:#3a2f27; --line-strong:#55463a;
+  --fg:#f0e7d8; --fg-muted:#a69880; --fg-faint:#73665a;
+  --accent:#d9a84a; --accent-soft:rgba(217,168,74,.14); --accent-ink:#1a1206;
+  --good:#8fc77a; --warn:#e2a95a; --bad:#e2715f;
+  --slot:#0d0a08; --slot-line:#4a3c30; --slot-hi:rgba(255,255,255,.05);
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.35);
+  --font-display:"Grenze Gotisch","Grenze",Georgia,serif;
+  --font-head:"Grenze",Georgia,"Times New Roman",serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Consolas,"Courier New",monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f1e9da; --surface:#faf5ea; --surface-2:#efe6d4; --surface-3:#e6dac4;
+    --line:#d7c9ae; --line-strong:#bda98a;
+    --fg:#2a2119; --fg-muted:#6e6150; --fg-faint:#9a8c78;
+    --accent:#a6711b; --accent-soft:rgba(166,113,27,.14); --accent-ink:#fff8e8;
+    --good:#3e8a2c; --warn:#b1701a; --bad:#b8432f;
+    --slot:#e7dcc6; --slot-line:#c4b193; --slot-hi:rgba(255,255,255,.5);
+    --shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 6px 18px rgba(80,60,30,.12);
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f1e9da; --surface:#faf5ea; --surface-2:#efe6d4; --surface-3:#e6dac4;
+  --line:#d7c9ae; --line-strong:#bda98a;
+  --fg:#2a2119; --fg-muted:#6e6150; --fg-faint:#9a8c78;
+  --accent:#a6711b; --accent-soft:rgba(166,113,27,.14); --accent-ink:#fff8e8;
+  --good:#3e8a2c; --warn:#b1701a; --bad:#b8432f;
+  --slot:#e7dcc6; --slot-line:#c4b193; --slot-hi:rgba(255,255,255,.5);
+  --shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 6px 18px rgba(80,60,30,.12);
+  color-scheme:light;
+}
+
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--font-body);-webkit-font-smoothing:antialiased}
+img{max-width:100%}
+[hidden]{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 56px;padding-inline:16px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h2{font:600 26px/1.15 var(--font-head);letter-spacing:.01em}
+h3{font:600 20px/1.2 var(--font-head)}
+p{margin:0}
+a{color:var(--accent)}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--fg-muted)}
+.eyebrow{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-muted);font-weight:600}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:disabled{opacity:.55;cursor:default}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+input.gold{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;width:112px}
+input.gold.empty{border-color:var(--warn);box-shadow:0 0 0 1px color-mix(in srgb,var(--warn) 35%,transparent)}
+input::placeholder{color:var(--fg-faint)}
+section{margin-top:40px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px;margin-bottom:16px}
+.sec-head p{max-width:62ch;color:var(--fg-muted)}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 28px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:14px}
+.brand h1{font:700 44px/1 var(--font-display);letter-spacing:.01em;color:var(--accent)}
+.brand .sub{font-size:13px;color:var(--fg-muted)}
+.brand .tile{width:52px;height:52px}
+.brand .tile img{width:40px;height:40px}
+.who{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-start}
+.who label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-muted);font-weight:600}
+.who input{width:160px;font-size:15px;letter-spacing:0;text-transform:none;font-weight:500}
+.who .info{font-size:12px;letter-spacing:0;text-transform:none;font-weight:400;color:var(--fg-muted);min-height:18px}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px}
+.seg button{padding:6px 12px;border-radius:6px;font-size:13.5px;font-weight:500;color:var(--fg-muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.params{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-top:16px}
+.params label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-muted);font-weight:600}
+.params input{width:118px;letter-spacing:0;text-transform:none;font-weight:500}
+.params .with-tile{flex-direction:row;align-items:center;gap:8px}
+.params .with-tile .tile{width:38px;height:38px}
+.params .with-tile .tile img{width:32px;height:32px}
+.params .with-tile span{display:flex;flex-direction:column;gap:4px}
+
+/* market bar */
+.market{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.market .lbl{display:flex;flex-direction:column;gap:4px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-muted);font-weight:600}
+.market select{letter-spacing:0;text-transform:none;font-weight:500;padding:6px 8px}
+.market .status{font-size:13px;color:var(--fg-muted);flex:1 1 260px;min-width:0}
+.market .status b{color:var(--fg);font-weight:600}
+.market .status.err{color:var(--bad)}
+
+/* sprite tile = inventory slot */
+.tile{display:inline-grid;place-items:center;width:44px;height:44px;flex:0 0 auto;background:var(--slot);border:1px solid var(--slot-line);border-radius:5px;box-shadow:0 1px 0 var(--slot-hi) inset,0 0 0 1px rgba(0,0,0,.2) inset}
+.tile img{width:32px;height:32px;image-rendering:pixelated;image-rendering:crisp-edges}
+.tile.empty::before{content:"";width:18px;height:18px;border:2px dashed var(--slot-line);border-radius:3px}
+
+/* summary */
+.summary{display:grid;grid-template-columns:minmax(260px,1.3fr) minmax(260px,1fr);gap:18px;margin-top:22px}
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px}
+.hero .big{font:600 54px/1 var(--font-mono);font-variant-numeric:tabular-nums;color:var(--accent);letter-spacing:-.02em;word-break:break-word}
+.hero .big small{font-size:22px;color:var(--fg-muted);margin-left:6px;font-weight:500}
+.hero .alt{font-size:14px;color:var(--fg-muted)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .v{font:600 22px/1.15 var(--font-mono);font-variant-numeric:tabular-nums;word-break:break-word}
+.kpi .v.warn{color:var(--warn)}
+.kpi .v.good{color:var(--good)}
+.kpi .k{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi input{width:64px;padding:3px 8px;text-align:right}
+.bars{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;align-items:center;gap:10px;font-size:13.5px}
+.bar .lbl{color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .track{height:10px;background:var(--surface-3);border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:3px;min-width:2px;transition:width .25s}
+.bar .val{font-size:13px}
+.bars-empty{color:var(--fg-faint);font-size:13.5px}
+
+/* set */
+.slots{display:flex;flex-direction:column;gap:10px}
+.slot{display:grid;grid-template-columns:auto auto minmax(140px,1fr) minmax(220px,2fr) auto;align-items:center;gap:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.slot.off{opacity:.55}
+.slot .slot-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.slot .slot-main .eyebrow{font-size:11px}
+.slot .slot-name{width:100%;max-width:220px;padding:5px 8px;font-weight:500;background:transparent;border-color:transparent}
+.slot .slot-name:hover,.slot .slot-name:focus{background:var(--surface-2);border-color:var(--line)}
+.slot .slot-imbs{display:flex;flex-wrap:wrap;gap:8px}
+.slot .slot-imbs select{padding:6px 8px;font-size:13.5px;max-width:100%}
+.slot .slot-imbs select.chosen{border-color:var(--accent);background:var(--accent-soft)}
+.slot .slot-cost{text-align:right;font-weight:600;font-size:16px;min-width:100px}
+.slot .slot-cost .per{display:block;font-size:11px;color:var(--fg-muted);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.switch{position:relative;display:inline-block;width:40px;height:22px;flex:0 0 auto}
+.switch input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.switch span{position:absolute;inset:0;background:var(--surface-3);border:1px solid var(--line-strong);border-radius:11px;transition:background .15s}
+.switch span::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--fg-muted);transition:transform .15s,background .15s}
+.switch input:checked+span{background:var(--accent);border-color:var(--accent)}
+.switch input:checked+span::after{transform:translateX(18px);background:var(--accent-ink)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;font-weight:500;color:var(--fg-muted);background:var(--surface)}
+.chip:hover{border-color:var(--accent);color:var(--fg)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+
+/* consumables */
+.cons{display:flex;flex-direction:column;gap:10px}
+.con{display:grid;grid-template-columns:auto auto minmax(140px,1.4fr) auto auto auto auto auto;align-items:center;gap:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.con.off{opacity:.55}
+.con .f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.con .f .eyebrow{font-size:10.5px}
+.con input.name{padding:5px 8px;font-weight:500;background:transparent;border-color:transparent;width:100%}
+.con input.name:hover,.con input.name:focus{background:var(--surface-2);border-color:var(--line)}
+.con input.gold{width:104px}
+.con input.hrs{width:72px;text-align:right}
+.con select{padding:6px 8px;font-size:13.5px}
+.con .cost{text-align:right;font-weight:600;font-size:16px;min-width:96px}
+.con .cost .per{display:block;font-size:11px;color:var(--fg-muted);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.icon-btn{width:32px;height:32px;border-radius:6px;color:var(--fg-muted);display:grid;place-items:center;font-size:18px;line-height:1}
+.icon-btn:hover{background:var(--surface-3);color:var(--bad)}
+.btn{padding:9px 16px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent}
+
+/* price book */
+.cats{display:flex;flex-wrap:wrap;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.imb{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.imb.inuse{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
+.imb header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.imb header .eff{font-size:13px;color:var(--fg-muted);margin-top:2px}
+.imb header .eff b{color:var(--fg);font-weight:600}
+.badge{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);white-space:nowrap}
+.imb .applies{font-size:12.5px;color:var(--fg-faint)}
+.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:10px}
+.item.out{opacity:.38}
+.item .nm{display:flex;flex-direction:column;min-width:0}
+.item .nm .n{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .nm .q{font-size:12px;color:var(--fg-muted)}
+.item .sub{font-size:13px;color:var(--fg-muted);min-width:76px;text-align:right}
+.imb .foot{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;border-top:1px solid var(--line);padding-top:12px;margin-top:2px}
+.imb .foot div{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--fg-muted)}
+.imb .foot div .v{color:var(--fg);font-weight:500}
+.imb .foot .hour{grid-column:1/-1;font-size:15px;align-items:baseline}
+.imb .foot .hour .v{font-size:20px;font-weight:600;color:var(--accent)}
+
+/* shopping */
+table{width:100%;border-collapse:collapse;font-size:14px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-muted);font-weight:600;white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+td .tile{width:36px;height:36px}
+td .tile img{width:28px;height:28px}
+tfoot td{font-weight:600;background:var(--surface-2)}
+.cell{display:flex;align-items:center;gap:10px}
+.cell .for{font-size:12px;color:var(--fg-muted)}
+.empty-row td{color:var(--fg-faint);text-align:center;padding:22px}
+
+/* share */
+.share{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 28px}
+.share .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.share .row{display:flex;flex-wrap:wrap;gap:8px}
+.share textarea{width:100%;min-height:72px;font-family:var(--font-mono);font-size:12px;resize:vertical}
+.share .note{font-size:13px;color:var(--fg-muted)}
+.foot-note{margin-top:28px;font-size:12.5px;color:var(--fg-faint);max-width:80ch}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:500;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100vw - 32px);z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:860px){
+  .summary{grid-template-columns:1fr}
+  .slot{grid-template-columns:auto auto 1fr auto;grid-template-areas:"sw tile main cost" "imbs imbs imbs imbs"}
+  .slot .switch{grid-area:sw}.slot .tile{grid-area:tile}.slot .slot-main{grid-area:main}.slot .slot-imbs{grid-area:imbs}.slot .slot-cost{grid-area:cost}
+  .con{grid-template-columns:auto auto 1fr auto;grid-template-areas:"sw tile name cost" "price cur hrs del"}
+  .con .switch{grid-area:sw}.con .tile{grid-area:tile}.con .f.name-f{grid-area:name}.con .f.price-f{grid-area:price}.con .f.cur-f{grid-area:cur}.con .f.hrs-f{grid-area:hrs}.con .cost{grid-area:cost}.con .icon-btn{grid-area:del;justify-self:end}
+  .share{grid-template-columns:1fr}
+  .hero .big{font-size:42px}
+}
+@media (max-width:460px){
+  .brand h1{font-size:38px}
+  .tiles{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr}
+  .item{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"tile nm price" "tile nm sub"}
+  .item .tile{grid-area:tile}.item .nm{grid-area:nm}.item input{grid-area:price;width:100px}.item .sub{grid-area:sub;min-width:0}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="tile"><img src="sprites/Silver_Token.gif" alt=""></span>
+      <div>
+        <h1>Imbui</h1>
+        <p class="sub">Quanto custa, por hora de hunt, manter seus imbuimentos.</p>
+      </div>
+    </div>
+    <div class="who">
+      <label>Personagem <input id="char" type="text" autocomplete="off" placeholder="nome no Tibia"><span class="info" id="char-info"></span></label>
+      <label>Mundo <input id="world" type="text" autocomplete="off"><span class="info" id="world-info"></span></label>
+      <label>Tier
+        <span class="seg" id="tier-seg" role="group" aria-label="Tier do imbuimento">
+          <button type="button" data-tier="basic" aria-pressed="false">Basic</button>
+          <button type="button" data-tier="intricate" aria-pressed="false">Intricate</button>
+          <button type="button" data-tier="powerful" aria-pressed="true">Powerful</button>
+        </span>
+      </label>
+    </div>
+  </header>
+
+  <div class="params">
+    <label class="with-tile"><span class="tile"><img src="sprites/Silver_Token.gif" alt=""></span><span>Silver Token <input class="gold" id="silver" inputmode="decimal"></span></label>
+    <label class="with-tile"><span class="tile"><img src="sprites/Gold_Token.gif" alt=""></span><span>Gold Token <input class="gold" id="goldtoken" inputmode="decimal"></span></label>
+    <label>Margem extra (%) <input id="margin" type="number" min="0" max="100" step="1"></label>
+    <label>Duração do imbui <input id="duration" value="20 horas" readonly title="Fixo pelo jogo: 20 horas de uso"></label>
+    <label>Taxa <span id="fee-view" class="mono" style="padding:8px 0;font-weight:600">250.000 gp</span></label>
+  </div>
+
+  <div class="market">
+    <span class="lbl">Preço a usar
+      <select id="price-mode" aria-label="Qual preço do market usar">
+        <option value="offer">Menor oferta de venda</option>
+        <option value="day">Média do dia</option>
+        <option value="month">Média do mês</option>
+      </select>
+    </span>
+    <button type="button" class="btn primary" id="pull-market">Puxar preços do market</button>
+    <p class="status" id="market-status">Preenche todos os itens e os tokens com o market do mundo acima, via TibiaMarket.</p>
+  </div>
+
+  <div class="summary">
+    <div class="hero">
+      <span class="eyebrow">Custo por hora de hunt</span>
+      <div class="big"><span id="hour-total">0</span><small>gp/h</small></div>
+      <p class="alt"><span id="hour-total-k">0</span> por hora · <span id="active-count">0 imbuimentos</span> ativos no set</p>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div class="tiles">
+      <div class="kpi"><span class="eyebrow k">Hunt de <input id="hours" type="number" min="0.5" step="0.5" aria-label="Horas de hunt"> h</span><span class="v" id="hunt-total">0</span><span class="muted" style="font-size:12.5px">o que a hunt precisa render só para pagar o imbui</span></div>
+      <div class="kpi"><span class="eyebrow">Imbuir tudo agora</span><span class="v" id="apply-total">0</span><span class="muted" style="font-size:12.5px"><span id="apply-count">0</span> aplicações · itens + taxa</span></div>
+      <div class="kpi"><span class="eyebrow">Ciclo completo (20 h)</span><span class="v" id="cycle-total">0</span><span class="muted" style="font-size:12.5px">imbuimentos + consumíveis por 20 h</span></div>
+      <div class="kpi"><span class="eyebrow">Itens sem preço</span><span class="v" id="missing-count">0</span><span class="muted" style="font-size:12.5px" id="missing-hint">todos os itens do set têm preço</span></div>
+    </div>
+  </div>
+
+  <section id="set">
+    <div class="sec-head">
+      <div><h2>Meu set</h2><p>Ligue os slots que você usa e escolha até três imbuimentos em cada. O nome do item é livre.</p></div>
+      <div class="presets" id="presets">
+        <span class="eyebrow">Preset</span>
+        <button type="button" class="chip" data-preset="saturnsz">Saturnsz · ED</button>
+        <button type="button" class="chip" data-preset="mage">Mago</button>
+        <button type="button" class="chip" data-preset="knight">Knight</button>
+        <button type="button" class="chip" data-preset="paladin">Paladin</button>
+      </div>
+    </div>
+    <div class="slots" id="slots"></div>
+  </section>
+
+  <section id="consumables">
+    <div class="sec-head">
+      <div><h2>Consumíveis por hora</h2><p>Anéis, amuletos e o que mais acaba durante a hunt. Preço por unidade, moeda e quanto tempo dura.</p></div>
+      <button type="button" class="btn" id="add-con">+ Adicionar</button>
+    </div>
+    <div class="cons" id="cons"></div>
+  </section>
+
+  <section id="prices">
+    <div class="sec-head">
+      <div><h2>Imbuimentos e preços</h2><p>Digite o preço de market de cada item ou use o botão "Puxar preços do market". Aceita <span class="mono">5600</span>, <span class="mono">5,6k</span> ou <span class="mono">1.2kk</span>. Os cards em destaque estão no seu set.</p></div>
+      <div class="cats" id="cats">
+        <button type="button" class="chip" data-cat="all" aria-pressed="true">Todos</button>
+        <button type="button" class="chip" data-cat="inuse" aria-pressed="false">No set</button>
+        <button type="button" class="chip" data-cat="leech" aria-pressed="false">Leech e crítico</button>
+        <button type="button" class="chip" data-cat="skill" aria-pressed="false">Skills</button>
+        <button type="button" class="chip" data-cat="elemental" aria-pressed="false">Dano elemental</button>
+        <button type="button" class="chip" data-cat="protection" aria-pressed="false">Proteção</button>
+        <button type="button" class="chip" data-cat="support" aria-pressed="false">Suporte</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="shopping">
+    <div class="sec-head">
+      <div><h2>Lista de compras</h2><p>Tudo que o set ativo consome em uma rodada de imbuimentos, somando itens repetidos.</p></div>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Item</th><th>Para</th><th class="num">Qtd.</th><th class="num">Unitário</th><th class="num">Total</th></tr></thead>
+        <tbody id="shop-body"></tbody>
+        <tfoot id="shop-foot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section id="share-sec">
+    <div class="sec-head">
+      <div><h2>Compartilhar</h2><p>Seus preços e seu set ficam salvos neste navegador. Para passar aos amigos, mande o link com os preços embutidos ou o código.</p></div>
+    </div>
+    <div class="share">
+      <div class="col">
+        <span class="eyebrow">Link</span>
+        <div class="row">
+          <button type="button" class="btn primary" id="copy-link">Copiar link com meus preços</button>
+          <button type="button" class="btn ghost" id="reset">Restaurar padrão</button>
+        </div>
+        <p class="note" id="link-note">Quem abrir o link recebe seus preços e seu set, e pode mudar à vontade sem afetar os seus.</p>
+        <input id="link-out" type="text" readonly aria-label="Link gerado" hidden>
+      </div>
+      <div class="col">
+        <span class="eyebrow">Código</span>
+        <textarea id="code-box" spellcheck="false" placeholder="Cole aqui um código recebido e clique em Importar"></textarea>
+        <div class="row">
+          <button type="button" class="btn" id="copy-code">Copiar meu código</button>
+          <button type="button" class="btn" id="import-code">Importar</button>
+        </div>
+        <p class="note" id="saved-note"></p>
+      </div>
+    </div>
+    <p class="foot-note">Taxas e receitas conforme a <a href="https://tibia.fandom.com/wiki/Imbuing" target="_blank" rel="noopener">TibiaWiki</a> (Powerful 250.000 gp, Intricate 60.000 gp, Basic 7.500 gp, duração de 20 horas de uso, sucesso garantido). Preços de market vêm do <a href="https://www.tibiamarket.top/" target="_blank" rel="noopener">TibiaMarket</a>, que depende de scans feitos por jogadores: veja a data do último scan antes de confiar. Dados de personagem pelo <a href="https://tibiadata.com/" target="_blank" rel="noopener">TibiaData</a>. Tibia e os sprites dos itens são © CipSoft GmbH. Ferramenta de fã, sem vínculo com a CipSoft.</p>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const STORE_KEY = 'imbui.v1';
+const FEES = { basic: 7500, intricate: 60000, powerful: 250000 };
+const TIER_ITEMS = { basic: 1, intricate: 2, powerful: 3 };
+const TIER_LABEL = { basic: 'Basic', intricate: 'Intricate', powerful: 'Powerful' };
+const HOURS = 20;
+const MARKET_API = 'https://api.tibiamarket.top';
+const CHAR_API = 'https://api.tibiadata.com/v4/character/';
+
+const CATS = { leech: 'Leech e crítico', skill: 'Skills', elemental: 'Dano elemental', protection: 'Proteção', support: 'Suporte' };
+
+// Receitas conforme TibiaWiki (Imbuing), outubro de 2026. Itens em ordem de tier: Basic usa o 1º, Intricate os dois primeiros, Powerful os três.
+const IMBS = [
+  { id:'vampirism', name:'Vampirism', cat:'leech', effect:'Life Leech', vals:['5%','10%','25%'], unit:'de leech de vida', applies:'Armas e armaduras', items:[['Vampire Teeth',25],['Bloody Pincers',15],['Piece of Dead Brain',5]] },
+  { id:'void', name:'Void', cat:'leech', effect:'Mana Leech', vals:['3%','5%','8%'], unit:'de leech de mana', applies:'Armas e capacetes', items:[['Rope Belt',25],['Silencer Claws',25],['Some Grimeleech Wings',5]] },
+  { id:'strike', name:'Strike', cat:'leech', effect:'Critical Hit', vals:['+5%','+15%','+40%'], unit:'de dano crítico (5% de chance)', applies:'Armas corpo a corpo, bows, crossbows e alguns wands e rods', items:[['Protective Charm',20],['Sabretooth',25],['Vexclaw Talon',5]] },
+  { id:'epiphany', name:'Epiphany', cat:'skill', effect:'Magic Level', vals:['+1','+2','+4'], unit:'Magic Level', applies:'Wands e capacetes exclusivos de mago', items:[['Elvish Talisman',25],['Broken Shamanic Staff',15],['Strand of Medusa Hair',15]] },
+  { id:'precision', name:'Precision', cat:'skill', effect:'Distance Fighting', vals:['+1','+2','+4'], unit:'Distance', applies:'Capacetes, bows e crossbows', items:[['Elven Scouting Glass',25],['Elven Hoof',20],['Metal Spike',10]] },
+  { id:'slash', name:'Slash', cat:'skill', effect:'Sword Fighting', vals:['+1','+2','+4'], unit:'Sword', applies:'Capacetes e espadas', items:[["Lion's Mane",25],["Mooh'tah Shell",25],['War Crystal',5]] },
+  { id:'chop', name:'Chop', cat:'skill', effect:'Axe Fighting', vals:['+1','+2','+4'], unit:'Axe', applies:'Capacetes e machados', items:[['Orc Tooth',20],['Battle Stone',25],['Moohtant Horn',20]] },
+  { id:'bash', name:'Bash', cat:'skill', effect:'Club Fighting', vals:['+1','+2','+4'], unit:'Club', applies:'Capacetes e clavas', items:[['Cyclops Toe',20],['Ogre Nose Ring',15],["Warmaster's Wristguards",10]] },
+  { id:'punch', name:'Punch', cat:'skill', effect:'Fist Fighting', vals:['+1','+2','+4'], unit:'Fist', applies:'Capacetes e armas de punho', items:[['Tarantula Egg',25],['Mantassin Tail',20],['Gold-Brocaded Cloth',15]] },
+  { id:'blockade', name:'Blockade', cat:'skill', effect:'Shielding', vals:['+1','+2','+4'], unit:'Shielding', applies:'Capacetes, escudos e spellbooks', items:[['Piece of Scarab Shell',20],['Brimstone Shell',25],['Frazzle Skin',25]] },
+  { id:'scorch', name:'Scorch', cat:'elemental', effect:'Fire Damage', vals:['10%','25%','50%'], unit:'do dano físico vira fogo', applies:'Armas corpo a corpo, bows e crossbows', items:[['Fiery Heart',25],['Green Dragon Scale',5],['Demon Horn',5]] },
+  { id:'venom', name:'Venom', cat:'elemental', effect:'Earth Damage', vals:['10%','25%','50%'], unit:'do dano físico vira terra', applies:'Armas corpo a corpo, bows e crossbows', items:[['Swamp Grass',25],['Poisonous Slime',20],['Slime Heart',2]] },
+  { id:'frost', name:'Frost', cat:'elemental', effect:'Ice Damage', vals:['10%','25%','50%'], unit:'do dano físico vira gelo', applies:'Armas corpo a corpo, bows e crossbows', items:[['Frosty Heart',25],['Seacrest Hair',10],['Polar Bear Paw',5]] },
+  { id:'electrify', name:'Electrify', cat:'elemental', effect:'Energy Damage', vals:['10%','25%','50%'], unit:'do dano físico vira energia', applies:'Armas corpo a corpo, bows e crossbows', items:[['Rorc Feather',25],['Peacock Feather Fan',5],['Energy Vein',1]] },
+  { id:'reap', name:'Reap', cat:'elemental', effect:'Death Damage', vals:['10%','25%','50%'], unit:'do dano físico vira morte', applies:'Armas corpo a corpo, bows e crossbows', items:[['Pile of Grave Earth',25],['Demonic Skeletal Hand',20],['Petrified Scream',5]] },
+  { id:'lichshroud', name:'Lich Shroud', cat:'protection', effect:'Death Protection', vals:['2%','5%','10%'], unit:'de proteção contra morte', applies:'Armaduras, escudos e spellbooks', items:[['Flask of Embalming Fluid',25],['Gloom Wolf Fur',20],['Mystical Hourglass',5]] },
+  { id:'snakeskin', name:'Snake Skin', cat:'protection', effect:'Earth Protection', vals:['3%','8%','15%'], unit:'de proteção contra terra', applies:'Armaduras, escudos e spellbooks', items:[['Piece of Swampling Wood',25],['Snake Skin',20],['Brimstone Fangs',10]] },
+  { id:'dragonhide', name:'Dragon Hide', cat:'protection', effect:'Fire Protection', vals:['3%','8%','15%'], unit:'de proteção contra fogo', applies:'Armaduras, escudos e spellbooks', items:[['Green Dragon Leather',20],['Blazing Bone',10],['Draken Sulphur',5]] },
+  { id:'quarascale', name:'Quara Scale', cat:'protection', effect:'Ice Protection', vals:['3%','8%','15%'], unit:'de proteção contra gelo', applies:'Armaduras, escudos e spellbooks', items:[['Winter Wolf Fur',25],['Thick Fur',15],['Deepling Warts',10]] },
+  { id:'cloudfabric', name:'Cloud Fabric', cat:'protection', effect:'Energy Protection', vals:['3%','8%','15%'], unit:'de proteção contra energia', applies:'Armaduras, escudos e spellbooks', items:[['Wyvern Talisman',20],['Crawler Head Plating',15],['Wyrm Scale',10]] },
+  { id:'demonpresence', name:'Demon Presence', cat:'protection', effect:'Holy Protection', vals:['3%','8%','15%'], unit:'de proteção contra sagrado', applies:'Armaduras, escudos e spellbooks', items:[['Cultish Robe',25],['Cultish Mask',25],['Hellspawn Tail',20]] },
+  { id:'vibrancy', name:'Vibrancy', cat:'support', effect:'Paralysis Deflection', vals:['15%','25%','50%'], unit:'de chance de desviar paralisia', applies:'Botas', items:[['Wereboar Hooves',20],['Crystallized Anger',15],['Quill',5]] },
+  { id:'swiftness', name:'Swiftness', cat:'support', effect:'Walking Speed', vals:['+10','+15','+30'], unit:'de velocidade', applies:'Botas', items:[['Damselfly Wing',15],['Compass',25],['Waspoid Wing',20]] },
+  { id:'featherweight', name:'Featherweight', cat:'support', effect:'Capacity', vals:['3%','8%','15%'], unit:'de capacidade', applies:'Mochilas (conta 20 h corridas, mesmo fora de combate)', items:[['Fairy Wings',20],['Little Bowl of Myrrh',10],['Goosebump Leather',5]] },
+];
+const IMB_BY_ID = Object.fromEntries(IMBS.map(i => [i.id, i]));
+const keyOf = n => n.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '_');
+const spriteOf = n => 'sprites/' + n.replace(/'/g, '').replace(/ /g, '_') + '.gif';
+const ITEM_NAMES = {}; for (const imb of IMBS) for (const [n] of imb.items) ITEM_NAMES[keyOf(n)] = n;
+
+// Ids dos itens no TibiaMarket (api.tibiamarket.top/item_metadata).
+const API_IDS = {battle_stone:11447, blazing_bone:16131, bloody_pincers:9633, brimstone_fangs:11702, brimstone_shell:11703, broken_shamanic_staff:11452, compass:10302, crawler_head_plating:14079, crystallized_anger:23507, cultish_mask:9638, cultish_robe:9639, cyclops_toe:9657, damselfly_wing:17458, deepling_warts:14012, demon_horn:5954, demonic_skeletal_hand:9647, draken_sulphur:11658, elven_hoof:18994, elven_scouting_glass:11464, elvish_talisman:9635, energy_vein:23508, fairy_wings:25694, fiery_heart:9636, flask_of_embalming_fluid:11466, frazzle_skin:20199, frosty_heart:9661, gloom_wolf_fur:22007, gold_brocaded_cloth:40529, goosebump_leather:20205, green_dragon_leather:5877, green_dragon_scale:5920, hellspawn_tail:10304, little_bowl_of_myrrh:25702, mantassin_tail:11489, metal_spike:10298, moohtant_horn:21200, mystical_hourglass:9660, ogre_nose_ring:22189, orc_tooth:10196, peacock_feather_fan:21975, petrified_scream:10420, piece_of_dead_brain:9663, piece_of_scarab_shell:9641, piece_of_swampling_wood:17823, pile_of_grave_earth:11484, poisonous_slime:9640, polar_bear_paw:9650, protective_charm:11444, quill:28567, rope_belt:11492, rorc_feather:18993, sabretooth:10311, seacrest_hair:21801, silencer_claws:20200, slime_heart:21194, snake_skin:9694, some_grimeleech_wings:22730, strand_of_medusa_hair:10309, swamp_grass:9686, tarantula_egg:10281, thick_fur:10307, vampire_teeth:9685, vexclaw_talon:22728, war_crystal:9654, waspoid_wing:14081, wereboar_hooves:22053, winter_wolf_fur:10295, wyrm_scale:9665, wyvern_talisman:9644, silver_token:22516, gold_token:22721};
+const ID_TO_KEY = Object.fromEntries(Object.entries(API_IDS).map(([k, v]) => [v, k]));
+
+// Preços iniciais: planilha imbui.xlsx (2026). Bowl of Myrrh estava 2 gp na planilha, corrigido para o preço de referência do outro mundo.
+const DEFAULT_PRICES = {
+  rope_belt: 7000, silencer_claws: 4000, some_grimeleech_wings: 1800,
+  elvish_talisman: 5000, broken_shamanic_staff: 17000, strand_of_medusa_hair: 3000,
+  protective_charm: 5000, sabretooth: 8000, vexclaw_talon: 1400,
+  vampire_teeth: 550, bloody_pincers: 22000, piece_of_dead_brain: 29000,
+  elven_scouting_glass: 375, elven_hoof: 10800, metal_spike: 800,
+  fairy_wings: 900, little_bowl_of_myrrh: 8800, goosebump_leather: 800,
+};
+const SLOT_DEFS = [
+  { id:'weapon', label:'Arma', sprite:'Soulhexer' },
+  { id:'helmet', label:'Capacete', sprite:'Gnome_Helmet' },
+  { id:'armor', label:'Armadura', sprite:'Bear_Skin' },
+  { id:'legs', label:'Calça', sprite:'Soulmantle' },
+  { id:'boots', label:'Botas', sprite:'Soulstrider' },
+  { id:'shield', label:'Escudo / Spellbook', sprite:'Spellbook_of_Vigilance' },
+  { id:'backpack', label:'Mochila', sprite:'Backpack' },
+];
+const PRESETS = {
+  saturnsz: { weapon:['Rod',1,['vampirism','strike']], helmet:['Helmet',1,['void','epiphany']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',0,['swiftness']], shield:['Spellbook',0,[]], backpack:['Backpack',0,['featherweight']] },
+  mage: { weapon:['Rod / Wand',1,['vampirism','strike']], helmet:['Helmet',1,['void','epiphany']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',1,['swiftness']], shield:['Spellbook',0,['blockade']], backpack:['Backpack',0,['featherweight']] },
+  knight: { weapon:['Weapon',1,['vampirism','void','strike']], helmet:['Helmet',1,['void','slash']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',1,['swiftness']], shield:['Shield',0,['blockade']], backpack:['Backpack',0,['featherweight']] },
+  paladin: { weapon:['Bow / Crossbow',1,['vampirism','void','strike']], helmet:['Helmet',1,['void','precision']], armor:['Armor',1,['vampirism']], legs:['Legs',0,[]], boots:['Boots',1,['swiftness']], shield:['—',0,[]], backpack:['Backpack',0,['featherweight']] },
+};
+const DEFAULT_CONS = [
+  { name:'Arboreal Ring', sprite:'Arboreal_Ring', price:5, cur:'silver', hours:3, on:1 },
+  { name:'Enchanted Theurgic Amulet', sprite:'Enchanted_Theurgic_Amulet', price:2, cur:'silver', hours:2, on:0 },
+  { name:'Plasma Amulet', sprite:'', price:6000, cur:'gold', hours:0.5, on:1 },
+  { name:'Plasma Ring', sprite:'', price:11000, cur:'gold', hours:0.5, on:0 },
+];
+function defaultState() {
+  return {
+    v: 1, char: 'Saturnsz', world: 'Tornabra', charInfo: '', tier: 'powerful', margin: 10, hours: 2, silver: 71000, goldtoken: 60000,
+    priceMode: 'offer', market: null,
+    prices: { ...DEFAULT_PRICES },
+    slots: slotsFromPreset('saturnsz'),
+    cons: DEFAULT_CONS.map(c => ({ ...c })),
+    savedAt: null,
+  };
+}
+function slotsFromPreset(p) {
+  const pr = PRESETS[p];
+  return SLOT_DEFS.map(d => { const [name, on, imbs] = pr[d.id]; return { id: d.id, name, on: !!on, imbs: [imbs[0] || '', imbs[1] || '', imbs[2] || ''] }; });
+}
+
+// ---------- numbers ----------
+const fmt = n => Math.round(n || 0).toLocaleString('pt-BR');
+function fmtK(n) {
+  n = n || 0; const a = Math.abs(n);
+  if (a >= 1e6) return (n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + 'kk';
+  if (a >= 1e3) return (n / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'k';
+  return fmt(n);
+}
+function parseGold(s) {
+  s = String(s ?? '').trim().toLowerCase().replace(/\s+/g, '').replace(/gps?$/, '');
+  if (!s) return 0;
+  const m = s.match(/^(\d+(?:[.,]\d+)*)(kk|k)?$/);
+  if (!m) return NaN;
+  let num = m[1]; const suf = m[2];
+  if (suf) { num = num.replace(',', '.'); if ((num.match(/\./g) || []).length > 1) num = num.replace(/\./g, ''); }
+  else num = num.replace(/[.,]/g, '');
+  let v = parseFloat(num);
+  if (suf === 'k') v *= 1e3; if (suf === 'kk') v *= 1e6;
+  return Math.round(v);
+}
+function parseNum(s) { const v = parseFloat(String(s).replace(',', '.')); return isFinite(v) ? v : 0; }
+const fmtDate = t => new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const fmtDateTime = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+// ---------- state ----------
+let S = defaultState();
+function normalize(x) {
+  const d = defaultState();
+  if (!x || typeof x !== 'object') return d;
+  const s = { ...d, ...x };
+  s.prices = { ...d.prices, ...(x.prices || {}) };
+  for (const k in s.prices) s.prices[k] = Math.max(0, parseNum(s.prices[k]));
+  if (!FEES[s.tier]) s.tier = 'powerful';
+  if (!['offer', 'day', 'month'].includes(s.priceMode)) s.priceMode = 'offer';
+  s.char = String(s.char ?? '').slice(0, 40); s.world = String(s.world ?? '').slice(0, 30); s.charInfo = String(s.charInfo ?? '').slice(0, 80);
+  s.market = (x.market && typeof x.market === 'object') ? { world: String(x.market.world || '').slice(0, 30), scannedAt: parseNum(x.market.scannedAt), fetchedAt: parseNum(x.market.fetchedAt), count: parseNum(x.market.count), mode: String(x.market.mode || '') } : null;
+  s.margin = Math.min(100, Math.max(0, parseNum(s.margin)));
+  s.hours = Math.max(0.5, parseNum(s.hours) || 2);
+  s.silver = Math.max(0, parseNum(s.silver)); s.goldtoken = Math.max(0, parseNum(s.goldtoken));
+  s.slots = SLOT_DEFS.map(def => {
+    const got = (Array.isArray(x.slots) ? x.slots : []).find(z => z && z.id === def.id) || d.slots.find(z => z.id === def.id);
+    const imbs = Array.isArray(got.imbs) ? got.imbs.slice(0, 3) : [];
+    while (imbs.length < 3) imbs.push('');
+    return { id: def.id, name: String(got.name ?? def.label).slice(0, 40), on: !!got.on, imbs: imbs.map(i => IMB_BY_ID[i] ? i : '') };
+  });
+  s.cons = (Array.isArray(x.cons) ? x.cons : d.cons).slice(0, 20).map(c => ({
+    name: String(c.name ?? 'Item').slice(0, 40), sprite: String(c.sprite || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 60),
+    price: Math.max(0, parseNum(c.price)), cur: ['gold', 'silver', 'goldtoken'].includes(c.cur) ? c.cur : 'gold',
+    hours: Math.max(0.05, parseNum(c.hours) || 1), on: !!c.on,
+  }));
+  return s;
+}
+function save() {
+  S.savedAt = Date.now();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+  const el = document.getElementById('saved-note');
+  el.textContent = 'Salvo neste navegador às ' + new Date(S.savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.';
+}
+function load() {
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) return normalize(JSON.parse(raw)); } catch (e) {}
+  return defaultState();
+}
+
+// ---------- share codec ----------
+const b64u = {
+  enc(bytes) { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+  dec(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const bin = atob(str); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; },
+};
+function compactState() { const { savedAt, ...rest } = S; return rest; }
+async function encodeState() {
+  const json = JSON.stringify(compactState());
+  const bytes = new TextEncoder().encode(json);
+  if (typeof CompressionStream === 'function') {
+    try {
+      const cs = new CompressionStream('gzip');
+      const buf = await new Response(new Blob([bytes]).stream().pipeThrough(cs)).arrayBuffer();
+      return 'g' + b64u.enc(new Uint8Array(buf));
+    } catch (e) {}
+  }
+  return 'j' + b64u.enc(bytes);
+}
+async function decodeState(code) {
+  code = String(code || '').trim().replace(/^.*#/, '');
+  const m = code.match(/^([gj])([A-Za-z0-9_-]+)$/);
+  if (!m) throw new Error('formato');
+  let bytes = b64u.dec(m[2]);
+  if (m[1] === 'g') {
+    if (typeof DecompressionStream !== 'function') throw new Error('sem suporte a descompressão neste navegador');
+    const ds = new DecompressionStream('gzip');
+    bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer());
+  }
+  return normalize(JSON.parse(new TextDecoder().decode(bytes)));
+}
+function shareBase() { return location.origin + location.pathname; }
+
+// ---------- calculations ----------
+function tierItems(imb) { return imb.items.slice(0, TIER_ITEMS[S.tier]); }
+function priceOf(name) { return S.prices[keyOf(name)] || 0; }
+function imbCalc(imb) {
+  let items = 0, missing = 0;
+  for (const [n, q] of tierItems(imb)) { const p = priceOf(n); if (!p) missing++; items += p * q; }
+  const fee = FEES[S.tier];
+  const apply = items + fee;
+  const hour = apply / HOURS * (1 + S.margin / 100);
+  return { items, fee, apply, hour, missing };
+}
+function activeImbs() {
+  const out = [];
+  for (const sl of S.slots) if (sl.on) for (const id of sl.imbs) if (id && IMB_BY_ID[id]) out.push({ slot: sl, imb: IMB_BY_ID[id] });
+  return out;
+}
+function conGold(c) { return c.price * (c.cur === 'silver' ? S.silver : c.cur === 'goldtoken' ? S.goldtoken : 1); }
+function conHour(c) { return conGold(c) / c.hours; }
+
+// ---------- rendering ----------
+const $ = id => document.getElementById(id);
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in attrs || {}) { const v = attrs[k]; if (k === 'class') e.className = v; else if (k === 'html') e.innerHTML = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v === true) e.setAttribute(k, ''); else if (v !== false && v != null) e.setAttribute(k, v); }
+  for (const k of kids) if (k != null) e.append(k);
+  return e;
+}
+function tile(sprite, alt) {
+  const t = el('span', { class: 'tile' + (sprite ? '' : ' empty') });
+  if (sprite) { const img = el('img', { src: sprite.startsWith('sprites/') ? sprite : 'sprites/' + sprite + '.gif', alt: alt || '' }); img.addEventListener('error', () => { img.remove(); t.classList.add('empty'); }); t.append(img); }
+  return t;
+}
+function goldInput(id, value, onchange, extra) {
+  const inp = el('input', { class: 'gold', id, type: 'text', inputmode: 'decimal', autocomplete: 'off', ...(extra || {}) });
+  inp.value = value ? fmt(value) : '';
+  inp.classList.toggle('empty', !value);
+  inp.addEventListener('focus', () => { inp.value = inp.value.replace(/\./g, ''); inp.select(); });
+  inp.addEventListener('input', () => { const v = parseGold(inp.value); if (!isNaN(v)) { onchange(v); inp.classList.toggle('empty', !v); } });
+  inp.addEventListener('blur', () => { const v = parseGold(inp.value); if (isNaN(v)) { inp.value = ''; onchange(0); } else inp.value = v ? fmt(v) : ''; inp.classList.toggle('empty', !parseGold(inp.value)); });
+  return inp;
+}
+function setGoldInput(id, value) { const inp = $(id); if (!inp) return; if (document.activeElement === inp) return; inp.value = value ? fmt(value) : ''; inp.classList.toggle('empty', !value); }
+function imbOptions(selected) {
+  const sel = el('select');
+  sel.append(el('option', { value: '' }, '— nenhum'));
+  for (const c in CATS) {
+    const g = el('optgroup', { label: CATS[c] });
+    for (const i of IMBS) if (i.cat === c) g.append(el('option', { value: i.id }, i.name + ' · ' + i.effect));
+    sel.append(g);
+  }
+  sel.value = selected || '';
+  sel.classList.toggle('chosen', !!selected);
+  return sel;
+}
+
+function buildSet() {
+  const root = $('slots'); root.replaceChildren();
+  for (const def of SLOT_DEFS) {
+    const sl = S.slots.find(z => z.id === def.id);
+    const row = el('div', { class: 'slot' + (sl.on ? '' : ' off'), id: 'slot-' + def.id });
+    const sw = el('label', { class: 'switch' }, el('input', { type: 'checkbox', id: 'slot-on-' + def.id, 'aria-label': 'Usar ' + def.label }), el('span'));
+    sw.firstChild.checked = sl.on;
+    sw.firstChild.addEventListener('change', e => { sl.on = e.target.checked; row.classList.toggle('off', !sl.on); update(); });
+    const name = el('input', { class: 'slot-name', id: 'slot-name-' + def.id, type: 'text', maxlength: '40', 'aria-label': 'Nome do item em ' + def.label });
+    name.value = sl.name;
+    name.addEventListener('input', () => { sl.name = name.value; update(); });
+    const imbs = el('div', { class: 'slot-imbs' });
+    sl.imbs.forEach((id, i) => {
+      const sel = imbOptions(id); sel.id = `slot-imb-${def.id}-${i}`; sel.setAttribute('aria-label', `Imbuimento ${i + 1} em ${def.label}`);
+      sel.addEventListener('change', () => { sl.imbs[i] = sel.value; sel.classList.toggle('chosen', !!sel.value); update(); });
+      imbs.append(sel);
+    });
+    row.append(sw, tile(def.sprite, def.label), el('div', { class: 'slot-main' }, el('span', { class: 'eyebrow' }, def.label), name), imbs,
+      el('div', { class: 'slot-cost mono' }, el('span', { 'data-slotcost': def.id }, '0'), el('span', { class: 'per' }, 'gp/h')));
+    root.append(row);
+  }
+}
+
+function buildCons() {
+  const root = $('cons'); root.replaceChildren();
+  S.cons.forEach((c, idx) => {
+    const row = el('div', { class: 'con' + (c.on ? '' : ' off') });
+    const sw = el('label', { class: 'switch' }, el('input', { type: 'checkbox', id: 'con-on-' + idx, 'aria-label': 'Usar ' + c.name }), el('span'));
+    sw.firstChild.checked = c.on;
+    sw.firstChild.addEventListener('change', e => { c.on = e.target.checked; row.classList.toggle('off', !c.on); update(); });
+    const name = el('input', { class: 'name', id: 'con-name-' + idx, type: 'text', maxlength: '40', 'aria-label': 'Nome do consumível' }); name.value = c.name;
+    name.addEventListener('input', () => { c.name = name.value; update(); });
+    const price = goldInput('con-price-' + idx, c.price, v => { c.price = v; update(); });
+    const cur = el('select', { id: 'con-cur-' + idx, 'aria-label': 'Moeda' }, el('option', { value: 'gold' }, 'gp'), el('option', { value: 'silver' }, 'Silver Token'), el('option', { value: 'goldtoken' }, 'Gold Token'));
+    cur.value = c.cur; cur.addEventListener('change', () => { c.cur = cur.value; update(); });
+    const hrs = el('input', { class: 'hrs', id: 'con-hrs-' + idx, type: 'number', min: '0.05', step: '0.25', 'aria-label': 'Duração em horas' }); hrs.value = c.hours;
+    hrs.addEventListener('input', () => { c.hours = Math.max(0.05, parseNum(hrs.value) || 0.05); update(); });
+    const del = el('button', { class: 'icon-btn', type: 'button', title: 'Remover', 'aria-label': 'Remover ' + c.name, onclick: () => { S.cons.splice(idx, 1); buildCons(); update(); } }, '×');
+    row.append(sw, tile(c.sprite, c.name),
+      el('div', { class: 'f name-f' }, el('span', { class: 'eyebrow' }, 'Item'), name),
+      el('div', { class: 'f price-f' }, el('span', { class: 'eyebrow' }, 'Preço unitário'), price),
+      el('div', { class: 'f cur-f' }, el('span', { class: 'eyebrow' }, 'Moeda'), cur),
+      el('div', { class: 'f hrs-f' }, el('span', { class: 'eyebrow' }, 'Dura (h)'), hrs),
+      el('div', { class: 'cost mono' }, el('span', { 'data-concost': idx }, '0'), el('span', { class: 'per' }, 'gp/h')), del);
+    root.append(row);
+  });
+  if (!S.cons.length) root.append(el('p', { class: 'muted' }, 'Nenhum consumível. Adicione anéis, amuletos ou o que acabar durante a hunt.'));
+}
+
+let activeCat = 'all';
+function buildGrid() {
+  const root = $('grid'); root.replaceChildren();
+  for (const imb of IMBS) {
+    const card = el('article', { class: 'imb', id: 'imb-' + imb.id, 'data-cat': imb.cat });
+    const badge = el('span', { class: 'badge', 'data-badge': imb.id }, 'no set'); badge.hidden = true;
+    card.append(el('header', {}, el('div', {}, el('h3', {}, imb.name), el('p', { class: 'eff' }, imb.effect + ' · ', el('b', { 'data-val': imb.id }, ''), ' ', el('span', { 'data-unit': imb.id }, imb.unit))), badge));
+    card.append(el('p', { class: 'applies' }, 'Aplica em: ' + imb.applies));
+    const ul = el('ul', { class: 'items' });
+    imb.items.forEach(([n, q], i) => {
+      const k = keyOf(n);
+      const li = el('li', { class: 'item', 'data-idx': i });
+      li.append(tile(spriteOf(n), n), el('div', { class: 'nm' }, el('span', { class: 'n', title: n }, n), el('span', { class: 'q' }, q + '× no imbui')),
+        goldInput('price-' + k, S.prices[k], v => { S.prices[k] = v; update(); }, { 'aria-label': 'Preço de ' + n, placeholder: 'preço' }),
+        el('span', { class: 'sub mono', 'data-sub': imb.id + ':' + i }, ''));
+      ul.append(li);
+    });
+    card.append(ul);
+    card.append(el('div', { class: 'foot' },
+      el('div', {}, el('span', {}, 'Itens'), el('span', { class: 'v mono', 'data-items': imb.id }, '')),
+      el('div', {}, el('span', {}, 'Taxa'), el('span', { class: 'v mono', 'data-fee': imb.id }, '')),
+      el('div', {}, el('span', {}, 'Por aplicação'), el('span', { class: 'v mono', 'data-apply': imb.id }, '')),
+      el('div', { class: 'hour' }, el('span', {}, 'Por hora de hunt'), el('span', { class: 'v mono', 'data-hour': imb.id }, ''))));
+    root.append(card);
+  }
+}
+function applyCatFilter() {
+  const used = new Set(activeImbs().map(a => a.imb.id));
+  for (const imb of IMBS) {
+    const card = $('imb-' + imb.id);
+    card.hidden = !(activeCat === 'all' || (activeCat === 'inuse' ? used.has(imb.id) : imb.cat === activeCat));
+  }
+  document.querySelectorAll('#cats .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === activeCat)));
+}
+
+function updateGrid() {
+  const used = new Map();
+  for (const a of activeImbs()) used.set(a.imb.id, (used.get(a.imb.id) || 0) + 1);
+  const n = TIER_ITEMS[S.tier];
+  for (const imb of IMBS) {
+    const c = imbCalc(imb);
+    const card = $('imb-' + imb.id);
+    const cnt = used.get(imb.id) || 0;
+    card.classList.toggle('inuse', cnt > 0);
+    const badge = card.querySelector('[data-badge]'); badge.hidden = !cnt; badge.textContent = cnt > 1 ? `no set ×${cnt}` : 'no set';
+    card.querySelector('[data-val]').textContent = imb.vals[n - 1];
+    imb.items.forEach(([nm, q], i) => {
+      const li = card.querySelector(`.item[data-idx="${i}"]`);
+      li.classList.toggle('out', i >= n);
+      const p = priceOf(nm);
+      card.querySelector(`[data-sub="${imb.id}:${i}"]`).textContent = i >= n ? '—' : (p ? fmt(p * q) : 'sem preço');
+    });
+    card.querySelector('[data-items]').textContent = fmt(c.items);
+    card.querySelector('[data-fee]').textContent = fmt(c.fee);
+    card.querySelector('[data-apply]').textContent = fmt(c.apply);
+    card.querySelector('[data-hour]').textContent = fmt(c.hour);
+  }
+}
+
+function updateSummary() {
+  const act = activeImbs();
+  let imbHour = 0, applyTotal = 0, missingItems = new Set(), perSlot = {};
+  for (const { slot, imb } of act) {
+    const c = imbCalc(imb);
+    imbHour += c.hour; applyTotal += c.apply;
+    perSlot[slot.id] = (perSlot[slot.id] || 0) + c.hour;
+    for (const [n] of tierItems(imb)) if (!priceOf(n)) missingItems.add(n);
+  }
+  let conHourTotal = 0, perCon = [];
+  S.cons.forEach((c, i) => { const h = c.on ? conHour(c) : 0; conHourTotal += h; perCon.push(h); const o = $('cons').querySelector(`[data-concost="${i}"]`); if (o) o.textContent = fmt(conHour(c)); });
+  const total = imbHour + conHourTotal;
+  $('hour-total').textContent = fmt(total);
+  $('hour-total-k').textContent = fmtK(total) + ' gp';
+  $('active-count').textContent = act.length + (act.length === 1 ? ' imbuimento' : ' imbuimentos');
+  $('hunt-total').textContent = fmt(total * S.hours) + ' gp';
+  $('apply-total').textContent = fmt(applyTotal) + ' gp';
+  $('apply-count').textContent = act.length;
+  $('cycle-total').textContent = fmt(applyTotal * (1 + S.margin / 100) + conHourTotal * HOURS) + ' gp';
+  const mc = $('missing-count'); mc.textContent = missingItems.size; mc.classList.toggle('warn', missingItems.size > 0); mc.classList.toggle('good', missingItems.size === 0 && act.length > 0);
+  $('missing-hint').textContent = missingItems.size ? [...missingItems].slice(0, 4).join(', ') + (missingItems.size > 4 ? '…' : '') : (act.length ? 'todos os itens do set têm preço' : 'nenhum imbuimento ativo');
+  for (const sl of S.slots) $('slots').querySelector(`[data-slotcost="${sl.id}"]`).textContent = fmt(sl.on ? perSlot[sl.id] || 0 : 0);
+  const rows = [];
+  for (const sl of S.slots) if (sl.on && perSlot[sl.id]) rows.push([sl.name || SLOT_DEFS.find(d => d.id === sl.id).label, perSlot[sl.id]]);
+  S.cons.forEach((c, i) => { if (c.on && perCon[i]) rows.push([c.name, perCon[i]]); });
+  rows.sort((a, b) => b[1] - a[1]);
+  const bars = $('bars'); bars.replaceChildren();
+  const max = rows.length ? rows[0][1] : 1;
+  if (!rows.length) bars.append(el('p', { class: 'bars-empty' }, 'Ligue um slot do set para ver a divisão do custo.'));
+  for (const [lbl, v] of rows) bars.append(el('div', { class: 'bar' }, el('span', { class: 'lbl', title: lbl }, lbl), el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${Math.max(1, v / max * 100)}%` })), el('span', { class: 'val mono' }, fmt(v))));
+  $('fee-view').textContent = fmt(FEES[S.tier]) + ' gp';
+}
+
+function updateShopping() {
+  const act = activeImbs();
+  const agg = new Map();
+  for (const { imb } of act) for (const [n, q] of tierItems(imb)) {
+    const k = keyOf(n); const a = agg.get(k) || { name: n, qty: 0, for: new Set() };
+    a.qty += q; a.for.add(imb.name); agg.set(k, a);
+  }
+  const body = $('shop-body'), foot = $('shop-foot'); body.replaceChildren(); foot.replaceChildren();
+  if (!agg.size) { body.append(el('tr', { class: 'empty-row' }, el('td', { colspan: '5' }, 'Nenhum imbuimento ativo no set.'))); return; }
+  let total = 0, missing = 0;
+  const list = [...agg.values()].sort((a, b) => (priceOf(b.name) * b.qty) - (priceOf(a.name) * a.qty));
+  for (const a of list) {
+    const p = priceOf(a.name); const sub = p * a.qty; total += sub; if (!p) missing++;
+    body.append(el('tr', {}, el('td', {}, el('div', { class: 'cell' }, tile(spriteOf(a.name), a.name), el('span', {}, a.name))),
+      el('td', { class: 'for' }, [...a.for].join(', ')), el('td', { class: 'num' }, a.qty + '×'), el('td', { class: 'num' }, p ? fmt(p) : el('span', { class: 'muted' }, 'sem preço')), el('td', { class: 'num' }, fmt(sub))));
+  }
+  const fees = FEES[S.tier] * act.length;
+  foot.append(el('tr', {}, el('td', { colspan: '4' }, `Itens (${missing ? missing + ' sem preço' : 'todos com preço'})`), el('td', { class: 'num' }, fmt(total))));
+  foot.append(el('tr', {}, el('td', { colspan: '4' }, `Taxas · ${act.length} × ${fmt(FEES[S.tier])} (${TIER_LABEL[S.tier]})`), el('td', { class: 'num' }, fmt(fees))));
+  foot.append(el('tr', {}, el('td', { colspan: '4' }, 'Total para imbuir o set'), el('td', { class: 'num' }, fmt(total + fees) + ' gp')));
+}
+
+function updateMarketStatus(err) {
+  const st = $('market-status'); st.classList.toggle('err', !!err);
+  if (err) { st.textContent = err; return; }
+  const m = S.market;
+  if (!m || !m.count) { st.textContent = 'Preenche todos os itens e os tokens com o market do mundo acima, via TibiaMarket.'; return; }
+  st.replaceChildren(el('b', {}, m.count + ' preços de ' + m.world), ' · scan do market em ', el('b', {}, fmtDate(m.scannedAt)), ' · puxado em ' + fmtDateTime(m.fetchedAt) + (m.mode ? ' · ' + ({ offer: 'menor oferta de venda', day: 'média do dia', month: 'média do mês' })[m.mode] : ''));
+}
+
+let updTimer = null;
+function update() {
+  updateGrid(); updateSummary(); updateShopping(); applyCatFilter();
+  clearTimeout(updTimer); updTimer = setTimeout(save, 250);
+}
+
+function syncHeader() {
+  $('char').value = S.char; $('world').value = S.world; $('margin').value = S.margin; $('hours').value = S.hours;
+  $('char-info').textContent = S.charInfo || '';
+  $('price-mode').value = S.priceMode;
+  setGoldInput('silver', S.silver); setGoldInput('goldtoken', S.goldtoken);
+  document.querySelectorAll('#tier-seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tier === S.tier)));
+  document.querySelectorAll('#presets .chip').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  updateMarketStatus();
+}
+function rebuildAll() { syncHeader(); buildSet(); buildCons(); buildGrid(); update(); }
+
+// ---------- market (TibiaMarket) ----------
+function pickPrice(row) {
+  const order = { offer: ['sell_offer', 'day_average_sell', 'month_average_sell'], day: ['day_average_sell', 'sell_offer', 'month_average_sell'], month: ['month_average_sell', 'day_average_sell', 'sell_offer'] }[S.priceMode];
+  for (const f of order) { const v = Number(row[f]); if (v > 0) return Math.round(v); }
+  return 0;
+}
+async function pullMarket() {
+  const btn = $('pull-market');
+  const world = S.world.trim();
+  if (!world) { updateMarketStatus('Digite o mundo (ex.: Tornabra) antes de puxar os preços.'); $('world').focus(); return; }
+  btn.disabled = true; btn.textContent = 'Consultando…'; updateMarketStatus();
+  try {
+    const ids = Object.values(API_IDS).join(',');
+    const url = `${MARKET_API}/market_values?server=${encodeURIComponent(world)}&item_ids=${ids}&limit=200`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (res.status === 429) throw new Error('O TibiaMarket aceita uma consulta a cada 5 segundos. Espere um pouco e tente de novo.');
+    if (res.status === 422 || res.status === 404) throw new Error(`O TibiaMarket não reconheceu o mundo "${world}". Confira a grafia.`);
+    if (!res.ok) throw new Error('O TibiaMarket respondeu com erro ' + res.status + '.');
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) throw new Error(`Nenhum dado de market para "${world}".`);
+    let count = 0, newest = 0; const missing = [];
+    for (const row of rows) {
+      const key = ID_TO_KEY[row.id]; if (!key) continue;
+      const p = pickPrice(row);
+      if (row.time && row.time * 1000 > newest) newest = row.time * 1000;
+      if (!p) { missing.push(ITEM_NAMES[key] || key); continue; }
+      if (key === 'silver_token') { S.silver = p; setGoldInput('silver', p); }
+      else if (key === 'gold_token') { S.goldtoken = p; setGoldInput('goldtoken', p); }
+      else { S.prices[key] = p; setGoldInput('price-' + key, p); }
+      count++;
+    }
+    const seen = new Set(rows.map(r => r.id));
+    for (const [key, id] of Object.entries(API_IDS)) if (!seen.has(id) && key !== 'silver_token' && key !== 'gold_token') missing.push(ITEM_NAMES[key] || key);
+    S.market = { world, scannedAt: newest || Date.now(), fetchedAt: Date.now(), count, mode: S.priceMode };
+    update(); updateMarketStatus();
+    toast(`${count} preços atualizados de ${world} (scan de ${fmtDate(S.market.scannedAt)})` + (missing.length ? ` · sem dado: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}` : ''));
+  } catch (e) {
+    updateMarketStatus(e.message && !/fetch|network|Failed/i.test(e.message) ? e.message : 'Não foi possível consultar o TibiaMarket agora. Verifique a conexão ou tente mais tarde.');
+  } finally { btn.disabled = false; btn.textContent = 'Puxar preços do market'; }
+}
+
+// ---------- character (TibiaData) ----------
+let charReq = 0;
+async function lookupChar() {
+  const name = S.char.trim();
+  if (name.length < 2) return;
+  const my = ++charReq;
+  $('char-info').textContent = 'Buscando…';
+  try {
+    const res = await fetch(CHAR_API + encodeURIComponent(name), { headers: { Accept: 'application/json' } });
+    const data = await res.json();
+    if (my !== charReq) return;
+    const c = data && data.character && data.character.character;
+    if (!res.ok || !c || !c.name) { S.charInfo = ''; $('char-info').textContent = 'Personagem não encontrado.'; return; }
+    S.charInfo = `${c.vocation} · level ${c.level}`;
+    $('char-info').textContent = S.charInfo;
+    if (c.name !== S.char) { S.char = c.name; $('char').value = c.name; }
+    if (c.world && c.world !== S.world) { S.world = c.world; $('world').value = c.world; $('world-info').textContent = 'pelo TibiaData'; toast(`${c.name} está em ${c.world}`); }
+    update();
+  } catch (e) { if (my === charReq) $('char-info').textContent = 'Sem resposta do TibiaData.'; }
+}
+
+// ---------- toast & clipboard ----------
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
+async function copyText(text, fallbackEl) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) {
+    if (fallbackEl) { fallbackEl.hidden = false; fallbackEl.value = text; fallbackEl.focus(); fallbackEl.select(); }
+    return false;
+  }
+}
+
+// ---------- wiring ----------
+function wire() {
+  let lastLooked = '';
+  $('char').addEventListener('input', e => { S.char = e.target.value.slice(0, 40); update(); });
+  $('char').addEventListener('change', () => { if (S.char.trim() && S.char.trim() !== lastLooked) { lastLooked = S.char.trim(); lookupChar(); } });
+  $('char').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+  $('world').addEventListener('input', e => { S.world = e.target.value.slice(0, 30); $('world-info').textContent = ''; update(); });
+  $('margin').addEventListener('input', e => { S.margin = Math.min(100, Math.max(0, parseNum(e.target.value))); update(); });
+  $('hours').addEventListener('input', e => { S.hours = Math.max(0.5, parseNum(e.target.value) || 0.5); update(); });
+  $('price-mode').addEventListener('change', e => { S.priceMode = e.target.value; update(); });
+  $('pull-market').addEventListener('click', pullMarket);
+  for (const [id, key] of [['silver', 'silver'], ['goldtoken', 'goldtoken']]) {
+    const inp = $(id);
+    inp.addEventListener('focus', () => { inp.value = inp.value.replace(/\./g, ''); inp.select(); });
+    inp.addEventListener('input', () => { const v = parseGold(inp.value); if (!isNaN(v)) { S[key] = v; update(); } });
+    inp.addEventListener('blur', () => { inp.value = fmt(S[key]); });
+  }
+  $('tier-seg').addEventListener('click', e => { const b = e.target.closest('button[data-tier]'); if (!b) return; S.tier = b.dataset.tier; syncHeader(); update(); });
+  $('presets').addEventListener('click', e => {
+    const b = e.target.closest('button[data-preset]'); if (!b) return;
+    S.slots = slotsFromPreset(b.dataset.preset); buildSet(); update();
+    document.querySelectorAll('#presets .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    toast('Preset aplicado: ' + b.textContent.trim());
+  });
+  $('cats').addEventListener('click', e => { const b = e.target.closest('button[data-cat]'); if (!b) return; activeCat = b.dataset.cat; applyCatFilter(); });
+  $('add-con').addEventListener('click', () => { S.cons.push({ name: 'Novo item', sprite: '', price: 0, cur: 'gold', hours: 1, on: true }); buildCons(); update(); const last = $('cons').querySelector(`#con-name-${S.cons.length - 1}`); if (last) { last.focus(); last.select(); } });
+  $('reset').addEventListener('click', () => {
+    const b = $('reset');
+    if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'Confirmar: apagar meus preços e set?'; b.classList.add('primary'); setTimeout(() => { b.dataset.arm = ''; b.textContent = 'Restaurar padrão'; b.classList.remove('primary'); }, 4000); return; }
+    S = defaultState(); rebuildAll(); save(); b.dataset.arm = ''; b.textContent = 'Restaurar padrão'; b.classList.remove('primary'); toast('Padrão restaurado (Saturnsz).');
+  });
+  $('copy-link').addEventListener('click', async () => {
+    const code = await encodeState();
+    const out = $('link-out');
+    const link = shareBase() + '#' + code;
+    const ok = await copyText(link, out);
+    toast(ok ? 'Link copiado' : 'Selecione e copie o link');
+    out.hidden = false; out.value = link;
+  });
+  $('copy-code').addEventListener('click', async () => { const code = await encodeState(); $('code-box').value = code; const ok = await copyText(code, $('code-box')); toast(ok ? 'Código copiado' : 'Selecione e copie o código'); });
+  $('import-code').addEventListener('click', async () => {
+    try { S = await decodeState($('code-box').value); rebuildAll(); save(); toast('Importado: preços e set de ' + (S.char || 'amigo')); }
+    catch (e) { toast('Código inválido. Copie o código inteiro e tente de novo.'); }
+  });
+}
+
+async function init() {
+  S = load();
+  let imported = false;
+  const h = (location.hash || '').slice(1);
+  if (/^[gj][A-Za-z0-9_-]{8,}$/.test(h)) {
+    try { S = await decodeState(h); imported = true; } catch (e) {}
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  }
+  wire(); rebuildAll();
+  if (imported) { save(); toast('Preços e set recebidos pelo link de ' + (S.char || 'amigo')); }
+  else if (S.savedAt) $('saved-note').textContent = 'Salvo neste navegador em ' + fmtDateTime(S.savedAt) + '.';
+  else $('saved-note').textContent = 'Preços iniciais da planilha imbui.xlsx. Tudo que você mudar fica salvo aqui.';
+}
+init();
+})();
+</script>
+<!--ARTIFACT-END-->
+</body>
+</html>
